@@ -1,170 +1,200 @@
-import os
-import uuid
-import json
-from django.core.files.storage import FileSystemStorage
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from bson import ObjectId
-from ..models.mediafile_model import MediaFile
+from django.core.files.storage import FileSystemStorage
+import uuid
+import os
+from ..models.mediafile_model import MediaFile, Watermark, Color
 from ..utils.json_encoder import CustomJSONEncoder
-from django.core.files.storage import default_storage
+from ..utils.json_utils import mongo_to_dict
 from django.conf import settings
+from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
 
 class Index(APIView):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.mediafile = MediaFile()
-    def get(self, request, mediafile_id=None):
-        if mediafile_id:
-            media_file = self.mediafile.get(mediafile_id)
-            if media_file:
-                return Response(
-                    json.loads(json.dumps(media_file, cls=CustomJSONEncoder)),
-                    status=status.HTTP_200_OK,
-                )
-            return Response(
-                {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        media_files = self.mediafile.list_all()
-        return Response(
-            json.loads(json.dumps(media_files, cls=CustomJSONEncoder)),
-            status=status.HTTP_200_OK,
-        )
+    def get(self, request):
+        media_files = MediaFile.objects.all()
+        media_files_list = []
+        for media_file in media_files:
+            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+            media_file_data['file_path'] = request.build_absolute_uri(media_file.file_path)
+            if media_file.file_watermarked:
+                media_file_data['file_watermarked'] = request.build_absolute_uri(media_file.file_watermarked)
+            media_files_list.append(media_file_data)
 
+        return Response(media_files_list, status=status.HTTP_200_OK)
 
+class Detail(APIView):
+    def get(self, request, mediafile_id):
+        media_file = MediaFile.objects(id=mediafile_id).first()
+        if media_file:
+            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+            media_file_data['file_path'] = request.build_absolute_uri(media_file.file_path)
+            if media_file.file_watermarked:
+                media_file_data['file_watermarked'] = request.build_absolute_uri(media_file.file_watermarked)
+            return Response(media_file_data, status=status.HTTP_200_OK)
+        return Response({"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND)
+    
 class Create(APIView):
     def post(self, request):
         data = request.data
         file = request.FILES.get("file")
-        
         if file:
             fs = FileSystemStorage()
-            # Lấy phần mở rộng của file
             extension = os.path.splitext(file.name)[1]
-            # Tạo tên file mới với uuid
             filename = str(uuid.uuid4()) + extension
-            # Lưu file với tên mới
             saved_filename = fs.save(filename, file)
             file_url = fs.url(saved_filename)
-            
-            data["file_path"] = file_url
-            media_id = MediaFile().create(
-                data.get("title"), data.get("file_path"), data.get("description")
+
+            file_size = file.size
+            file_type = file.content_type
+            file_name = file.name
+            width, height = None, None
+
+            # Extract image dimensions if the file is an image
+            if file_type.startswith("image"):
+                from PIL import Image
+                image = Image.open(file)
+                width, height = image.size
+
+            media_file = MediaFile(
+                file_name=file_name,
+                file_type=file_type,
+                file_size=file_size,
+                file_path=file_url,
+                width=width,
+                height=height,
+                description=data.get("description", "")
             )
-            return Response(
-                {"code": 201,"message": "Media file added", "id": media_id},
-                status=status.HTTP_201_CREATED,
-            )
-        return Response(
-            {"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST
-        )
-
-
-class Detail(APIView):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.mediafile = MediaFile()
-
-    def get(self, request, mediafile_id):
-        print(mediafile_id)
-        media_file = self.mediafile.get(mediafile_id)
-        if media_file:
-            return Response(
-                json.loads(json.dumps(media_file, cls=CustomJSONEncoder)),
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
-        )
-
-
+            media_file.save()
+            return Response({"message": "Media file added", "id": str(media_file.id)}, status=status.HTTP_201_CREATED)
+        return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
 class Edit(APIView):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.mediafile = MediaFile()
-
     def patch(self, request, mediafile_id):
-        data = {}
-        title = request.data.get("title")
-        description = request.data.get("description")
-        
-        if title:
-            data["title"] = title
-        if description:
-            data["description"] = description
-
-        file = request.FILES.get("file")
-        if file:
-            # Lấy thông tin file cũ từ cơ sở dữ liệu
-            old_file_path = self.mediafile.get(mediafile_id).get("file_path")
-            if old_file_path:
-                # Chuyển đổi đường dẫn file cũ thành đường dẫn tuyệt đối
-                absolute_old_file_path = os.path.join(settings.BASE_DIR, old_file_path.lstrip("/"))
-                if os.path.exists(absolute_old_file_path):
-                    try:
-                        os.remove(absolute_old_file_path)
-                        print(f"File {absolute_old_file_path} deleted successfully.")
-                    except Exception as e:
-                        print(f"Error deleting file {absolute_old_file_path}: {str(e)}")
-                        return Response({"error": f"Error deleting old file: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                else:
-                    print(f"File {absolute_old_file_path} not found.")
-            
-            # Lưu file mới
-            fs = FileSystemStorage()
-            extension = os.path.splitext(file.name)[1]
-            filename = str(uuid.uuid4()) + extension
-            saved_filename = fs.save(filename, file)
-            file_url = fs.url(saved_filename)
-            data["file_path"] = file_url
-
-        update_count = self.mediafile.update(mediafile_id, data)
-        if update_count:
-            return Response(
-                {"code": 200, "message": "Media file updated"}, status=status.HTTP_200_OK
-            )
-        return Response(
-            {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
-        )
-        
-        
-class Delete(APIView):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.mediafile = MediaFile()
-
-    def delete(self, request, mediafile_id):
-        media_file = self.mediafile.get(mediafile_id)
+        media_file = MediaFile.objects(id=mediafile_id).first()
         if not media_file:
             return Response({"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        file_path = media_file.get('file_path')
-        print("Original file_path from DB: ", file_path)
-        
-        if file_path:
-            # Xóa tiền tố "/media" nếu tồn tại
-            if file_path.startswith("/media"):
-                file_path = file_path[len("/media"):]
-            print("file_path after removing /media: ", file_path)
+        data = request.data
+        if "description" in data:
+            media_file.description = data["description"]
 
-            # Chuẩn hóa đường dẫn
-            file_path = file_path.lstrip("/")
-            absolute_file_path = os.path.normpath(os.path.join(settings.MEDIA_ROOT, file_path))
-            print("absolute_file_path: ", absolute_file_path)
-            
-            # Kiểm tra và xóa file nếu tồn tại
+        file = request.FILES.get("file")
+        if file:
+            old_file_path = media_file.file_path
+            if old_file_path:
+                absolute_old_file_path = os.path.join(settings.MEDIA_ROOT, old_file_path.lstrip("/"))
+                if os.path.exists(absolute_old_file_path):
+                    os.remove(absolute_old_file_path)
+
+            fs = FileSystemStorage()
+            extension = os.path.splitext(file.name)[1]
+            filename = str(uuid.uuid4()) + extension
+            saved_filename = fs.save(filename, file)
+            file_url = fs.url(saved_filename)
+
+            file_size = file.size
+            file_type = file.content_type
+            file_name = file.name
+            width, height = None, None
+
+            if file_type.startswith("image"):
+                from PIL import Image
+                image = Image.open(file)
+                width, height = image.size
+
+            media_file.file_name = file_name
+            media_file.file_type = file_type
+            media_file.file_size = file_size
+            media_file.file_path = file_url
+            media_file.width = width
+            media_file.height = height
+
+        media_file.save()
+        return Response({"message": "Media file updated"}, status=status.HTTP_200_OK)
+
+
+class Delete(APIView):
+    def delete(self, request, mediafile_id):
+        media_file = MediaFile.objects(id=mediafile_id).first()
+        if not media_file:
+            return Response({"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        file_path = media_file.file_path
+        if file_path:
+            absolute_file_path = os.path.normpath(os.path.join(settings.MEDIA_ROOT, file_path.lstrip("/")))
             if os.path.isfile(absolute_file_path):
-                try:
-                    os.remove(absolute_file_path)
-                    print(f"File {absolute_file_path} deleted successfully.")
-                except Exception as e:
-                    print(f"Error deleting file {absolute_file_path}: {str(e)}")
-                    return Response({"error": f"Error deleting file: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            else:
-                print(f"File {absolute_file_path} not found.")
-                
-        delete_count = self.mediafile.delete(mediafile_id)
-        if delete_count:
-            return Response({"message": "Media file and associated file deleted"}, status=status.HTTP_204_NO_CONTENT)
-        return Response({"error": "Error deleting media file from database"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                os.remove(absolute_file_path)
+
+        media_file.delete()
+        return Response({"message": "Media file deleted"}, status=status.HTTP_204_NO_CONTENT)
+    
+def hex_to_rgb(hex_color):
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+class ApplyWatermark(APIView):
+    def post(self, request, mediafile_id):
+        media_file = MediaFile.objects(id=mediafile_id).first()
+        if not media_file:
+            return Response({"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        hex_color = data.get("color", "#000000")
+        rgb_color = hex_to_rgb(hex_color)
+        watermark_options = Watermark(
+            type=data["type"],
+            content=data["content"],
+            position_x=float(data["position_x"]),
+            position_y=float(data["position_y"]),
+            opacity=float(data["opacity"]),
+            size=float(data["size"]),
+            color=hex_color
+        )
+
+        # Apply watermark to the image
+        file_path = media_file.file_path
+        file_path = file_path[len("/media"):]
+        file_path = file_path.lstrip("/")
+        absolute_file_path = os.path.normpath(os.path.join(settings.MEDIA_ROOT, file_path))
+        
+        if not os.path.exists(absolute_file_path):
+            return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            image = Image.open(absolute_file_path).convert("RGBA")
+            txt = Image.new("RGBA", image.size, (255, 255, 255, 0))
+
+            draw = ImageDraw.Draw(txt)
+            font_size = int(watermark_options.size)
+            font_path = os.path.join(settings.BASE_DIR, "arial.ttf")
+            font = ImageFont.truetype(font_path, font_size)
+            
+            text = watermark_options.content
+            position = (watermark_options.position_x, watermark_options.position_y)
+
+            draw.text(position, text, font=font, fill=(rgb_color[0], rgb_color[1], rgb_color[2], int(watermark_options.opacity * 255)))
+
+            watermarked = Image.alpha_composite(image, txt)
+            watermarked = watermarked.convert("RGB")
+
+            # SAVE FILE
+            fs = FileSystemStorage()
+            extension = os.path.splitext(file_path)[1]
+            filename = str(uuid.uuid4()) + "_watermarked" + extension
+
+            # Save image to BytesIO
+            img_io = BytesIO()
+            watermarked.save(img_io, format=watermarked.format or 'PNG')
+            img_io.seek(0)  # Đặt lại con trỏ về đầu stream
+            
+            saved_filename = fs.save(filename, img_io)
+            watermarked_url = fs.url(saved_filename)
+
+            media_file.watermark_options = watermark_options
+            media_file.file_watermarked = watermarked_url
+            media_file.save()
+
+            return Response({"message": "Watermark applied successfully", "file_path": watermarked_url}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

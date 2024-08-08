@@ -1,47 +1,41 @@
-from bson import ObjectId
-from ..configs.mongodb import MongoDB
+import mongoengine as me
+from datetime import datetime
 
-class MediaFile:
-    def __init__(self):
-        self.db = MongoDB().get_collection('mediafiles')
+class Color(me.EmbeddedDocument):
+    red = me.IntField(required=True)
+    green = me.IntField(required=True)
+    blue = me.IntField(required=True)
 
-    def to_dict(self, mediafile):
-        """Convert mediafile MongoDB document to dictionary."""
-        return {
-            "id": str(mediafile['_id']),  # Chuyển ObjectId thành chuỗi
-            "title": mediafile.get('title', ''),
-            "file_path": mediafile.get('file_path', ''),
-            "description": mediafile.get('description', '')
-        }
+class Watermark(me.EmbeddedDocument):
+    type = me.StringField(required=True)
+    content = me.StringField(required=True)
+    position_x = me.FloatField(required=True)
+    position_y = me.FloatField(required=True)
+    opacity = me.FloatField(required=True)
+    size = me.FloatField(required=True)
+    color = me.StringField(required=True) 
 
-    def create(self, title, file_path, description=None):
-        """Create a new media file document."""
-        document = {
-            'title': title,
-            'file_path': file_path,
-            'description': description
-        }
-        result = self.db.insert_one(document)
-        return str(result.inserted_id)
+class MediaFile(me.Document):
+    file_name = me.StringField(max_length=255, required=True)
+    file_type = me.StringField(max_length=50, required=True)
+    file_size = me.IntField(required=True)
+    file_path = me.StringField(required=True)
+    width = me.IntField(required=False)
+    height = me.IntField(required=False)
+    description = me.StringField()
+    watermark_options = me.EmbeddedDocumentField(Watermark, required=False)
+    file_watermarked = me.StringField()
+    created_at = me.DateTimeField(default=datetime.utcnow)
+    updated_at = me.DateTimeField(default=datetime.utcnow)
 
-    def get(self, mediafile_id):
-        """Retrieve a media file by its ID."""
-        mediafile = self.db.find_one({"_id": ObjectId(mediafile_id)})
-        if mediafile:
-            return self.to_dict(mediafile)
-        return None
+    meta = {
+        'collection': 'media_files',
+        'indexes': [
+            'file_name',
+            'file_type',
+            'created_at',
+        ],
+    }
 
-    def update(self, mediafile_id, update_data):
-        """Update a media file document by its ID."""
-        result = self.db.update_one({"_id": ObjectId(mediafile_id)}, {"$set": update_data})
-        return result.modified_count
-
-    def delete(self, mediafile_id):
-        """Delete a media file document by its ID."""
-        result = self.db.delete_one({"_id": ObjectId(mediafile_id)})
-        return result.deleted_count
-
-    def list_all(self):
-        """List all media file documents."""
-        mediafiles = list(self.db.find({}))
-        return [self.to_dict(mediafile) for mediafile in mediafiles]
+    def __str__(self):
+        return self.file_name

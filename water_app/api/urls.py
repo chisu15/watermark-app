@@ -5,6 +5,7 @@ from .controllers.mediafile_controller import (
     Detail,
     Edit,
     Create,
+    ApplyWatermark
 )
 
 urlpatterns = [
@@ -18,5 +19,7 @@ urlpatterns = [
     path("mediafiles/edit/<str:mediafile_id>", Edit.as_view(), name="mediafile-edit"),
     
     path("mediafiles/delete/<str:mediafile_id>", Delete.as_view(), name="mediafile-delete"),
+    
+    path("mediafiles/apply-watermark/<str:mediafile_id>", ApplyWatermark.as_view(), name="mediafile-apply-watermark"),
     # MEDIAFILES
 ]
