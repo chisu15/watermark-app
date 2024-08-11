@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>API Overview</title>
+        {% load static %}
+        <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="title">Watermark API Overview</h1>
+            <ul>
+                <h2>Media File API</h2>
+                <li>
+                    <strong>List Media Files:</strong>
+                    <span class="method method-get">GET</span>
+                    <a href="{% url 'mediafile-index' %}"
+                        >{% url 'mediafile-index' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-index' %}')"
+                    >
+                        Copy URL
+                    </button>
+                </li>
+                <li>
+                    <strong>Create Media File:</strong>
+                    <span class="method method-post">POST</span>
+                    <a href="{% url 'mediafile-create' %}"
+                        >{% url 'mediafile-create' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-create' %}')"
+                    >
+                        Copy URL
+                    </button>
+                    <button
+                        class="toggle-button"
+                        onclick="toggleData('create-data')"
+                    >
+                        Show Sample Data
+                    </button>
+                    <pre id="create-data" style="display: none">
+{
+    "file": *your-mediafile
+    "description": "An example file"
+}</pre
+                    >
+                </li>
+                <li>
+                    <strong>Detail Media File:</strong>
+                    <span class="method method-get">GET</span>
+                    <a href="{% url 'mediafile-detail' 'example_id' %}"
+                        >{% url 'mediafile-detail' 'example_id' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-detail' 'example_id' %}')"
+                    >
+                        Copy URL
+                    </button>
+                </li>
+                <li>
+                    <strong>Edit Media File:</strong>
+                    <span class="method method-put">PATCH</span>
+                    <a href="{% url 'mediafile-edit' 'example_id' %}"
+                        >{% url 'mediafile-edit' 'example_id' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-edit' 'example_id' %}')"
+                    >
+                        Copy URL
+                    </button>
+                    <button
+                        class="toggle-button"
+                        onclick="toggleData('edit-data')"
+                    >
+                        Show Sample Data
+                    </button>
+                    <pre id="edit-data" style="display: none">
+{
+    "file_name": "example_updated.jpg",
+    "description": "Updated description"
+}</pre
+                    >
+                </li>
+                <li>
+                    <strong>Delete Media File:</strong>
+                    <span class="method method-delete">DELETE</span>
+                    <a href="{% url 'mediafile-delete' 'example_id' %}"
+                        >{% url 'mediafile-delete' 'example_id' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-delete' 'example_id' %}')"
+                    >
+                        Copy URL
+                    </button>
+                </li>
+                <li>
+                    <strong>Apply Watermark:</strong>
+                    <span class="method method-post">POST</span>
+                    <a href="{% url 'mediafile-apply-watermark' 'example_id' %}"
+                        >{% url 'mediafile-apply-watermark' 'example_id' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-apply-watermark' 'example_id' %}')"
+                    >
+                        Copy URL
+                    </button>
+                    <button
+                        class="toggle-button"
+                        onclick="toggleData('watermark-data')"
+                    >
+                        Show Sample Data
+                    </button>
+                    <pre id="watermark-data" style="display: none">
+{
+    "type": "text",
+    "content": "Sample Watermark",
+    "position_x": 50,
+    "position_y": 100,
+    "opacity": 0.5,
+    "size": 12,
+    "color": "#FFFFFF"
+}</pre
+                    >
+                </li>
+            </ul>
+            <div class="footer">
+                <p>&copy; 2024 Watermark API Project</p>
+                <p>Developed by Đỗ Trung Hiếu</p>
+            </div>
+        </div>
+
+        <script>
+            function copyToClipboard(path) {
+                var fullUrl = window.location.origin + path;
+                navigator.clipboard.writeText(fullUrl).then(function() {
+                    alert('URL copied to clipboard: ' + fullUrl);
+                }, function(err) {
+                    alert('Failed to copy URL');
+                });
+            }
+
+            function toggleData(id) {
+                var element = document.getElementById(id);
+                if (element.style.display === "none") {
+                    element.style.display = "block";
+                } else {
+                    element.style.display = "none";
+                }
+            }
+        </script>
+    </body>
+</html>

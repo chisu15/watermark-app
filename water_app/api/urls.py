@@ -1,4 +1,5 @@
 from django.urls import path
+from . import views
 from .controllers.mediafile_controller import (
     Index,
     Delete,
@@ -9,6 +10,7 @@ from .controllers.mediafile_controller import (
 )
 
 urlpatterns = [
+    path('', views.api_overview, name='api-overview'),
     # MEDIAFILES
     path("mediafiles/", Index.as_view(), name="mediafile-index"),
     

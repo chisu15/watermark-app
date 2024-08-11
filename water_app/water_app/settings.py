@@ -40,7 +40,6 @@ connect(
     port=int(os.getenv('DATABASE_PORT'))
 )
 
-
 INSTALLED_APPS = [
     # 'django.contrib.admin',
     "django.contrib.auth",
@@ -51,7 +50,8 @@ INSTALLED_APPS = [
     "api",
     "rest_framework",
     "corsheaders",
-    "mongoengine"
+    "mongoengine",
+    "water_app"
 ]
 
 MIDDLEWARE = [
@@ -92,20 +92,19 @@ ROOT_URLCONF = "water_app.urls"
 
 TEMPLATES = [
     {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # Đường dẫn tới thư mục templates ở cấp dự án
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
 ]
-
 WSGI_APPLICATION = "water_app.wsgi.application"
 
 
@@ -156,7 +155,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

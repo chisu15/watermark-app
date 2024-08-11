@@ -1,11 +1,6 @@
 import mongoengine as me
 from datetime import datetime
 
-class Color(me.EmbeddedDocument):
-    red = me.IntField(required=True)
-    green = me.IntField(required=True)
-    blue = me.IntField(required=True)
-
 class Watermark(me.EmbeddedDocument):
     type = me.StringField(required=True)
     content = me.StringField(required=True)

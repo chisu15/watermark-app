@@ -4,7 +4,7 @@ from rest_framework import status
 from django.core.files.storage import FileSystemStorage
 import uuid
 import os
-from ..models.mediafile_model import MediaFile, Watermark, Color
+from ..models.mediafile_model import MediaFile, Watermark
 from ..utils.json_encoder import CustomJSONEncoder
 from ..utils.json_utils import mongo_to_dict
 from django.conf import settings
