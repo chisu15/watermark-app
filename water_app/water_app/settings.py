@@ -28,7 +28,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "fallback_secret_key")
 
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 APPEND_SLASH = False
 # Application definition
@@ -164,3 +164,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
 }
+STATIC_ROOT = '/root/watermark-app/water_app/api/static/'
