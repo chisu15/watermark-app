@@ -41,19 +41,30 @@ connect(
 )
 
 INSTALLED_APPS = [
-    # 'django.contrib.admin',
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "api",
-    "rest_framework",
-    "corsheaders",
-    "mongoengine",
-    "water_app"
-]
+    # Django core apps
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.sites',  # Cần thiết cho django-allauth
 
+    # Third-party apps
+    'rest_framework',
+    'corsheaders',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+    'rest_framework.authtoken',
+
+    # Custom apps
+    'water_app',
+]
+LOGIN_REDIRECT_URL = '/auth/profile/'
+LOGOUT_REDIRECT_URL = '/'
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -64,6 +75,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -93,7 +105,7 @@ ROOT_URLCONF = "water_app.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # Đường dẫn tới thư mục templates ở cấp dự án
+        'DIRS': [os.path.join(BASE_DIR, 'api/templates')],  # Đường dẫn tới thư mục templates ở cấp dự án
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -156,6 +168,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = "/static/"
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'api/static'),
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') 
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -164,4 +180,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
 }
-STATIC_ROOT = '/root/watermark-app/water_app/api/static/'
+

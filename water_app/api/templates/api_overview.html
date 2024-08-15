@@ -42,10 +42,10 @@
                         Show Sample Data
                     </button>
                     <pre id="create-data" style="display: none">
-{
-    "file": *your-mediafile
-    "description": "An example file"
-}</pre
+                    {
+                        "file": *your-mediafile
+                        "description": "An example file"
+                    }</pre
                     >
                 </li>
                 <li>
@@ -78,10 +78,10 @@
                         Show Sample Data
                     </button>
                     <pre id="edit-data" style="display: none">
-{
-    "file_name": "example_updated.jpg",
-    "description": "Updated description"
-}</pre
+                    {
+                        "file_name": "example_updated.jpg",
+                        "description": "Updated description"
+                    }</pre
                     >
                 </li>
                 <li>
@@ -114,16 +114,55 @@
                         Show Sample Data
                     </button>
                     <pre id="watermark-data" style="display: none">
-{
-    "type": "text",
-    "content": "Sample Watermark",
-    "position_x": 50,
-    "position_y": 100,
-    "opacity": 0.5,
-    "size": 12,
-    "color": "#FFFFFF"
-}</pre
+                    {
+                        "type": "text",
+                        "content": "Sample Watermark",
+                        "position_x": 50,
+                        "position_y": 100,
+                        "opacity": 0.5,
+                        "size": 12,
+                        "color": "#FFFFFF"
+                    }</pre
                     >
+                </li>
+            </ul>
+            <ul>
+                <h2>User API</h2>
+                <li>
+                    <strong>Login:</strong>
+                    <span class="method method-get">GET</span>
+                    <a href="{% url 'google-auth' %}"
+                        >{% url 'google-auth' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'google-auth' %}')"
+                    >
+                        Copy URL
+                    </button>
+                </li>
+                <li>
+                    <strong>Profile:</strong>
+                    <span class="method method-get">GET</span>
+                    <a href="{% url 'profile' %}"
+                        >{% url 'profile' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'profile' %}')"
+                    >
+                        Copy URL
+                    </button>
+                </li>
+                <li>
+                    <strong>Logout:</strong>
+                    <span class="method method-post">POST</span>
+                    <a href="{% url 'logout' %}"
+                        >{% url 'logout' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'logout' %}')"
+                    >
+                        Copy URL
+                    </button>
                 </li>
             </ul>
             <div class="footer">
