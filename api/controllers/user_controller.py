@@ -48,7 +48,7 @@ class GoogleCallbackView(APIView):
                 'client_secret': os.getenv('GOOGLE_CLIENT_SECRET'),
                 'code': code,
                 'grant_type': 'authorization_code',
-                'redirect_uri': os.getenv('GOOGLE_REDIRECT_URI_FE')
+                'redirect_uri': os.getenv('GOOGLE_REDIRECT_URI')
             }
 
             token_response = post(token_url, headers=headers, data=data)
@@ -81,7 +81,6 @@ class GoogleCallbackView(APIView):
         except Exception as error:
             print(f'Error in callback: {error}')
             return Response({'error': 'Callback failed', 'message': str(error)}, status=400)
-
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
