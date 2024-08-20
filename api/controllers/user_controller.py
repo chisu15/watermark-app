@@ -83,7 +83,7 @@ class GoogleCallbackView(APIView):
             user.save()
 
             # Set the token as a cookie (if required)
-            response = redirect('/profile')
+            response = redirect(os.getenv('GOOGLE_REDIRECT_URI_PROFILE'))
             response.set_cookie('token', tokens.get('id_token'), httponly=True, secure=True, samesite='None')
 
             return response
