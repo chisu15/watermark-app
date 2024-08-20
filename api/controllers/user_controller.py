@@ -9,6 +9,7 @@ from django.contrib.auth import logout as django_logout
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from ..models.user_model import User
 import os
+from .google_oauth_client import GoogleOAuthClient
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
@@ -25,38 +26,17 @@ class GoogleLoginView(APIView):
 
 class GoogleCallbackView(APIView):
     permission_classes = [AllowAny]
-    client = WebApplicationClient(os.getenv('GOOGLE_CLIENT_ID'))
 
     def get(self, request, *args, **kwargs):
-        code = request.GET.get('code')
+        oauth_client = GoogleOAuthClient()
+        oauth_client.get_access_token(request)
+        userinfo = oauth_client.get_user_info()
 
-        # Request access token
-        token_url, headers, body = self.client.prepare_token_request(
-            "https://oauth2.googleapis.com/token",
-            authorization_response=request.build_absolute_uri(),
-            # Xóa 'redirect_uri' nếu nó đã được tự động thêm vào
-            # redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
-            code=code
-        )
-
-        token_response = post(
-            token_url,
-            headers=headers,
-            data=body,
-            auth=(os.getenv('GOOGLE_CLIENT_ID'), os.getenv('GOOGLE_CLIENT_SECRET')),
-        )
-        self.client.parse_request_body_response(token_response.text)
-
-        # Request user info
-        uri, headers, body = self.client.add_token("https://www.googleapis.com/oauth2/v2/userinfo")
-        userinfo_response = get(uri, headers=headers, data=body)
-        userinfo = userinfo_response.json()
-
-        # Check if user already exists
+        # Kiểm tra xem người dùng đã tồn tại chưa
         user = User.objects(email=userinfo["email"]).first()
 
         if not user:
-            # Create a new user if not exists
+            # Tạo người dùng mới nếu chưa tồn tại
             user = User(
                 google_id=userinfo["id"],
                 email=userinfo["email"],
@@ -65,14 +45,14 @@ class GoogleCallbackView(APIView):
                 last_login_time=datetime.utcnow()
             )
         else:
-            # Update user info if user exists
+            # Cập nhật thông tin người dùng nếu đã tồn tại
             user.last_login_time = datetime.utcnow()
             user.profile_picture = userinfo["picture"]
             user.save()
 
         user.save()
 
-        # Return user info
+        # Trả về thông tin người dùng
         return Response({
             'id': str(user.id),
             'username': user.username,
