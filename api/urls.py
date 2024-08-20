@@ -29,7 +29,7 @@ urlpatterns = [
     # AUTH
     path('auth/google/', GoogleLoginView.as_view(), name='google-login'),
     path('auth/google/callback/', GoogleCallbackView.as_view(), name='google-callback'),
-    path('auth/google/logout/', GoogleLogoutView.as_view(), name='google-logout'),
+    path('auth/google/logout/', GoogleLogoutView.as_view(), name='logout'),
     
     path('accounts/', include('allauth.urls')),
     # AUTH
