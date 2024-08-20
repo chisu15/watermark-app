@@ -39,10 +39,19 @@ class GoogleCallbackView(APIView):
             token_url, headers, body = client.prepare_token_request(
                 "https://oauth2.googleapis.com/token",
                 authorization_response=request.build_absolute_uri(),
-                redirect_uri=os.getenv('GOOGLE_REDIRECT_URI_FE'),
                 code=code
             )
-            token_response = post(token_url, headers=headers, data=body)
+
+            # Thay vì chỉnh sửa trực tiếp 'body', ta xây dựng thủ công request data
+            data = {
+                'client_id': os.getenv('GOOGLE_CLIENT_ID'),
+                'client_secret': os.getenv('GOOGLE_CLIENT_SECRET'),
+                'code': code,
+                'grant_type': 'authorization_code',
+                'redirect_uri': os.getenv('GOOGLE_REDIRECT_URI_FE')
+            }
+
+            token_response = post(token_url, headers=headers, data=data)
             tokens = token_response.json()
 
             client.parse_request_body_response(token_response.text)
@@ -72,6 +81,7 @@ class GoogleCallbackView(APIView):
         except Exception as error:
             print(f'Error in callback: {error}')
             return Response({'error': 'Callback failed', 'message': str(error)}, status=400)
+
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
