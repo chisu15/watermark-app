@@ -9,7 +9,8 @@ from django.contrib.auth import logout as django_logout
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from ..models.user_model import User
 import os
-from .google_oauth_client import GoogleOAuthClient
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
@@ -42,7 +43,6 @@ class GoogleCallbackView(APIView):
                 code=code
             )
 
-            # Thay vì chỉnh sửa trực tiếp 'body', ta xây dựng thủ công request data
             data = {
                 'client_id': os.getenv('GOOGLE_CLIENT_ID'),
                 'client_secret': os.getenv('GOOGLE_CLIENT_SECRET'),
@@ -54,36 +54,35 @@ class GoogleCallbackView(APIView):
             token_response = post(token_url, headers=headers, data=data)
             tokens = token_response.json()
 
-            client.parse_request_body_response(token_response.text)
+            if 'id_token' not in tokens:
+                return Response({'error': 'Failed to obtain ID token from Google'}, status=400)
 
             # Verify the ID token
-            uri, headers, body = client.add_token("https://www.googleapis.com/oauth2/v2/userinfo")
-            userinfo_response = get(uri, headers=headers, data=body)
-            userinfo = userinfo_response.json()
+            id_info = id_token.verify_oauth2_token(tokens['id_token'], requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
 
-            # Tìm người dùng theo google_id
-            user = User.objects(google_id=userinfo['id']).first()
+            # Find or create the user
+            user = User.objects(google_id=id_info['sub']).first()
 
             if not user:
-                # Nếu người dùng không tồn tại, tạo mới
+                # If user doesn't exist, create a new user
                 user = User(
-                    google_id=userinfo['id'],
-                    email=userinfo['email'],
-                    username=userinfo['name'],
-                    profile_picture=userinfo['picture'],
+                    google_id=id_info['sub'],
+                    email=id_info['email'],
+                    username=id_info['name'],
+                    profile_picture=id_info.get('picture'),
                     last_login_time=datetime.utcnow()
                 )
             else:
-                # Nếu người dùng đã tồn tại, cập nhật thông tin
-                user.email = userinfo['email']
-                user.username = userinfo['name']
-                user.profile_picture = userinfo['picture']
+                # Update user info if user exists
+                user.email = id_info['email']
+                user.username = id_info['name']
+                user.profile_picture = id_info.get('picture')
                 user.last_login_time = datetime.utcnow()
 
             user.save()
 
             # Set the token as a cookie (if required)
-            response = redirect(os.getenv('GOOGLE_REDIRECT_URI_PROFILE'))
+            response = redirect(os.getenv('GOOGLE_REDIRECT_URI_FE'))
             response.set_cookie('token', tokens.get('id_token'), httponly=True, secure=True, samesite='None')
 
             return response
@@ -96,25 +95,34 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        # Kiểm tra xem người dùng đã đăng nhập chưa
-        user = request.user
-        if user.is_authenticated:
-            try:
-                user_profile = User.objects.get(email=user.email)
-                data = {
-                    "id": str(user_profile.id),
-                    "username": user_profile.username,
-                    "email": user_profile.email,
-                    "profile_picture": user_profile.profile_picture,
-                    "last_login_time": user_profile.last_login_time,
-                }
-                return Response(data, status=status.HTTP_200_OK)
-            except User.DoesNotExist:
-                return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
-        
+        try:
+            # Get token from cookie
+            token = request.COOKIES.get('token')
+            if not token:
+                return Response({"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Verify the token with Google
+            id_info = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
+
+            # Find user by google_id from id_info
+            user = User.objects.get(google_id=id_info['sub'])
+            data = {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "profile_picture": user.profile_picture,
+                "last_login_time": user.last_login_time,
+            }
+            return Response(data, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
 class LogoutView(APIView):
     def post(self, request, *args, **kwargs):
         django_logout(request)
-        return Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
+        response = Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
+        response.delete_cookie('token')
+        return response
