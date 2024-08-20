@@ -37,7 +37,6 @@ class GoogleOAuthController(APIView):
         token_url, headers, body = self.client.prepare_token_request(
             "https://oauth2.googleapis.com/token",
             authorization_response=request.build_absolute_uri(),
-            redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
             code=code
         )
         token_response = post(
