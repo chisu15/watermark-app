@@ -77,7 +77,25 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "allauth.account.middleware.AccountMiddleware",
 ]
+# Cấu hình Site ID (bắt buộc bởi allauth)
+SITE_ID = 1
 
+# Cấu hình URL redirect sau khi đăng nhập thành công
+LOGIN_REDIRECT_URL = '/'
+# Đảm bảo xác thực bằng tài khoản xã hội được kích hoạt
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.getenv('GOOGLE_CLIENT_ID'),
+            'secret': os.getenv('GOOGLE_CLIENT_SECRET'),
+            'key': ''
+        }
+    }
+}
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_METHODS = [
     'DELETE',

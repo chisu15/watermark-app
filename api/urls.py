@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 from .controllers.mediafile_controller import (
     Index,
@@ -8,7 +8,7 @@ from .controllers.mediafile_controller import (
     Create,
     ApplyWatermark
 )
-from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, ProfileView, UserUpdateView, LogoutView
+from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, GoogleLogoutView
 
 
 urlpatterns = [
@@ -27,10 +27,10 @@ urlpatterns = [
     path("mediafiles/apply-watermark/<str:mediafile_id>", ApplyWatermark.as_view(), name="mediafile-apply-watermark"),
     # MEDIAFILES
     # AUTH
-    path('auth/google/', GoogleLoginView.as_view(), name='google_login'),
-    path('auth/google/callback/', GoogleCallbackView.as_view(), name='google_callback'),
-    path('auth/profile/', ProfileView.as_view(), name='profile'),
-    path('profile/update/', UserUpdateView.as_view(), name='profile_update'),
-    path('auth/logout/', LogoutView.as_view(), name='logout'),
+    path('auth/google/', GoogleLoginView.as_view(), name='google-login'),
+    path('auth/google/callback/', GoogleCallbackView.as_view(), name='google-callback'),
+    path('auth/google/logout/', GoogleLogoutView.as_view(), name='google-logout'),
+    
+    path('accounts/', include('allauth.urls')),
     # AUTH
 ]
