@@ -61,16 +61,26 @@ class GoogleCallbackView(APIView):
             userinfo_response = get(uri, headers=headers, data=body)
             userinfo = userinfo_response.json()
 
-            # Find or create the user
-            user, created = User.objects.update_or_create(
-                google_id=userinfo['id'],
-                defaults={
-                    'email': userinfo['email'],
-                    'username': userinfo['name'],
-                    'profile_picture': userinfo['picture'],
-                    'last_login_time': datetime.utcnow()
-                }
-            )
+            # Tìm người dùng theo google_id
+            user = User.objects(google_id=userinfo['id']).first()
+
+            if not user:
+                # Nếu người dùng không tồn tại, tạo mới
+                user = User(
+                    google_id=userinfo['id'],
+                    email=userinfo['email'],
+                    username=userinfo['name'],
+                    profile_picture=userinfo['picture'],
+                    last_login_time=datetime.utcnow()
+                )
+            else:
+                # Nếu người dùng đã tồn tại, cập nhật thông tin
+                user.email = userinfo['email']
+                user.username = userinfo['name']
+                user.profile_picture = userinfo['picture']
+                user.last_login_time = datetime.utcnow()
+
+            user.save()
 
             # Set the token as a cookie (if required)
             response = redirect('/profile')
