@@ -34,7 +34,8 @@ class GoogleCallbackView(APIView):
         token_url, headers, body = self.client.prepare_token_request(
             "https://oauth2.googleapis.com/token",
             authorization_response=request.build_absolute_uri(),
-            redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),  # Đảm bảo giá trị này được truyền chính xác
+            # Xóa 'redirect_uri' nếu nó đã được tự động thêm vào
+            # redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
             code=code
         )
 
@@ -79,7 +80,7 @@ class GoogleCallbackView(APIView):
             'profile_picture': user.profile_picture,
             'last_login_time': user.last_login_time
         }, status=status.HTTP_200_OK)
-        
+
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
