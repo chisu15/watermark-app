@@ -96,20 +96,24 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
+        # Kiểm tra xem người dùng đã đăng nhập chưa
         user = request.user
-        try:
-            user_profile = User.objects.get(email=user.email)
-            data = {
-                "id": str(user_profile.id),
-                "username": user_profile.username,
-                "email": user_profile.email,
-                "profile_picture": user_profile.profile_picture,
-                "last_login_time": user_profile.last_login_time,
-            }
-            return Response(data, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
+        if user.is_authenticated:
+            try:
+                user_profile = User.objects.get(email=user.email)
+                data = {
+                    "id": str(user_profile.id),
+                    "username": user_profile.username,
+                    "email": user_profile.email,
+                    "profile_picture": user_profile.profile_picture,
+                    "last_login_time": user_profile.last_login_time,
+                }
+                return Response(data, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+        
 class LogoutView(APIView):
     def post(self, request, *args, **kwargs):
         django_logout(request)
