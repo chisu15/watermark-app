@@ -28,38 +28,50 @@ class GoogleCallbackView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        oauth_client = GoogleOAuthClient()
-        oauth_client.get_access_token(request)
-        userinfo = oauth_client.get_user_info()
+        try:
+            code = request.GET.get('code')
+            if not code:
+                return Response({'error': 'Code is missing from query parameters'}, status=400)
 
-        # Kiểm tra xem người dùng đã tồn tại chưa
-        user = User.objects(email=userinfo["email"]).first()
+            client = WebApplicationClient(os.getenv('GOOGLE_CLIENT_ID'))
 
-        if not user:
-            # Tạo người dùng mới nếu chưa tồn tại
-            user = User(
-                google_id=userinfo["id"],
-                email=userinfo["email"],
-                username=userinfo["name"],
-                profile_picture=userinfo["picture"],
-                last_login_time=datetime.utcnow()
+            # Exchange code for access token
+            token_url, headers, body = client.prepare_token_request(
+                "https://oauth2.googleapis.com/token",
+                authorization_response=request.build_absolute_uri(),
+                redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
+                code=code
             )
-        else:
-            # Cập nhật thông tin người dùng nếu đã tồn tại
-            user.last_login_time = datetime.utcnow()
-            user.profile_picture = userinfo["picture"]
-            user.save()
+            token_response = post(token_url, headers=headers, data=body)
+            tokens = token_response.json()
 
-        user.save()
+            client.parse_request_body_response(token_response.text)
 
-        # Trả về thông tin người dùng
-        return Response({
-            'id': str(user.id),
-            'username': user.username,
-            'email': user.email,
-            'profile_picture': user.profile_picture,
-            'last_login_time': user.last_login_time
-        }, status=status.HTTP_200_OK)
+            # Verify the ID token
+            uri, headers, body = client.add_token("https://www.googleapis.com/oauth2/v2/userinfo")
+            userinfo_response = get(uri, headers=headers, data=body)
+            userinfo = userinfo_response.json()
+
+            # Find or create the user
+            user, created = User.objects.update_or_create(
+                google_id=userinfo['id'],
+                defaults={
+                    'email': userinfo['email'],
+                    'username': userinfo['name'],
+                    'profile_picture': userinfo['picture'],
+                    'last_login_time': datetime.utcnow()
+                }
+            )
+
+            # Set the token as a cookie (if required)
+            response = redirect('/profile')
+            response.set_cookie('token', tokens.get('id_token'), httponly=True, secure=True, samesite='None')
+
+            return response
+
+        except Exception as error:
+            print(f'Error in callback: {error}')
+            return Response({'error': 'Callback failed', 'message': str(error)}, status=400)
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
