@@ -8,7 +8,7 @@ from .controllers.mediafile_controller import (
     Create,
     ApplyWatermark
 )
-from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, ProfileView, LogoutView
+from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, ProfileView, UserUpdateView, LogoutView
 
 
 urlpatterns = [
@@ -30,6 +30,7 @@ urlpatterns = [
     path('auth/google/', GoogleLoginView.as_view(), name='google_login'),
     path('auth/google/callback/', GoogleCallbackView.as_view(), name='google_callback'),
     path('auth/profile/', ProfileView.as_view(), name='profile'),
+    path('profile/update/', UserUpdateView.as_view(), name='profile_update'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     # AUTH
 ]

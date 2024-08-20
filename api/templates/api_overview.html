@@ -153,6 +153,18 @@
                     </button>
                 </li>
                 <li>
+                    <strong>Profile Updated:</strong>
+                    <span class="method method-post">POST</span>
+                    <a href="{% url 'profile_update' %}"
+                        >{% url 'profile_update' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'profile_update' %}')"
+                    >
+                        Copy URL
+                    </button>
+                </li>
+                <li>
                     <strong>Logout:</strong>
                     <span class="method method-post">POST</span>
                     <a href="{% url 'logout' %}"
