@@ -7,22 +7,26 @@ class GoogleOAuthClient:
         self.client = WebApplicationClient(os.getenv('GOOGLE_CLIENT_ID'))
 
     def get_login_url(self):
-        # Tạo URL đăng nhập Google
-        url = self.client.prepare_request_uri(
+        return self.client.prepare_request_uri(
             "https://accounts.google.com/o/oauth2/auth",
             redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
             scope=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"],
         )
-        return url
 
-    def get_access_token(self, request):
-        # Yêu cầu token truy cập
+    def get_token_and_userinfo(self, request):
+        code = request.GET.get('code')
+
+        # Prepare token request
         token_url, headers, body = self.client.prepare_token_request(
             "https://oauth2.googleapis.com/token",
             authorization_response=request.build_absolute_uri(),
-            code=request.GET.get('code')
+            code=code
         )
 
+        # Add redirect_uri to the body
+        body["redirect_uri"] = os.getenv('GOOGLE_REDIRECT_URI')
+
+        # Request access token
         token_response = post(
             token_url,
             headers=headers,
@@ -31,8 +35,7 @@ class GoogleOAuthClient:
         )
         self.client.parse_request_body_response(token_response.text)
 
-    def get_user_info(self):
-        # Lấy thông tin người dùng từ Google
+        # Request user info
         uri, headers, body = self.client.add_token("https://www.googleapis.com/oauth2/v2/userinfo")
         userinfo_response = get(uri, headers=headers, data=body)
         return userinfo_response.json()
