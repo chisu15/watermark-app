@@ -140,7 +140,7 @@
                         Copy URL
                     </button>
                 </li>
-                {% comment %} <li>
+                <li>
                     <strong>Profile:</strong>
                     <span class="method method-get">GET</span>
                     <a href="{% url 'profile' %}"
@@ -152,18 +152,6 @@
                         Copy URL
                     </button>
                 </li>
-                <li>
-                    <strong>Profile Updated:</strong>
-                    <span class="method method-post">POST</span>
-                    <a href="{% url 'profile_update' %}"
-                        >{% url 'profile_update' %}</a
-                    >
-                    <button
-                        onclick="copyToClipboard('{% url 'profile_update' %}')"
-                    >
-                        Copy URL
-                    </button>
-                </li> {% endcomment %}
                 <li>
                     <strong>Logout:</strong>
                     <span class="method method-post">POST</span>
