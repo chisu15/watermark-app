@@ -59,7 +59,6 @@ class GoogleCallbackView(APIView):
         except Exception as e:
             return Response({"error": "Callback failed", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 

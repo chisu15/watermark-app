@@ -20,9 +20,11 @@ class GoogleOAuthClient:
         token_url, headers, body = self.client.prepare_token_request(
             "https://oauth2.googleapis.com/token",
             authorization_response=request.build_absolute_uri(),
-            code=code,
-            redirect_uri=os.getenv('GOOGLE_REDIRECT_URI')  # Đảm bảo giá trị này được truyền chính xác
+            code=code  # Đảm bảo không truyền thêm `redirect_uri` ở đây
         )
+
+        # Thêm `redirect_uri` vào payload token request sau khi chuẩn bị body
+        body['redirect_uri'] = os.getenv('GOOGLE_REDIRECT_URI')
 
         # Request access token
         token_response = post(
