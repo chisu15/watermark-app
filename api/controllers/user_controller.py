@@ -10,18 +10,11 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from ..models.user_model import User
 import os
 
-class GoogleOAuthController(APIView):
+class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
     client = WebApplicationClient(os.getenv('GOOGLE_CLIENT_ID'))
 
     def get(self, request, *args, **kwargs):
-        # Check if this is a login request or a callback
-        if 'code' not in request.GET:
-            return self.login(request)
-        else:
-            return self.callback(request)
-
-    def login(self, request):
         # Generate the Google login URL
         url = self.client.prepare_request_uri(
             "https://accounts.google.com/o/oauth2/auth",
@@ -30,15 +23,21 @@ class GoogleOAuthController(APIView):
         )
         return redirect(url)
 
-    def callback(self, request):
+class GoogleCallbackView(APIView):
+    permission_classes = [AllowAny]
+    client = WebApplicationClient(os.getenv('GOOGLE_CLIENT_ID'))
+
+    def get(self, request, *args, **kwargs):
         code = request.GET.get('code')
 
         # Request access token
         token_url, headers, body = self.client.prepare_token_request(
             "https://oauth2.googleapis.com/token",
             authorization_response=request.build_absolute_uri(),
+            redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),  # Đảm bảo giá trị này được truyền chính xác
             code=code
         )
+
         token_response = post(
             token_url,
             headers=headers,
@@ -50,7 +49,6 @@ class GoogleOAuthController(APIView):
         # Request user info
         uri, headers, body = self.client.add_token("https://www.googleapis.com/oauth2/v2/userinfo")
         userinfo_response = get(uri, headers=headers, data=body)
-
         userinfo = userinfo_response.json()
 
         # Check if user already exists
@@ -81,7 +79,7 @@ class GoogleOAuthController(APIView):
             'profile_picture': user.profile_picture,
             'last_login_time': user.last_login_time
         }, status=status.HTTP_200_OK)
-
+        
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 

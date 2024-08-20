@@ -8,7 +8,7 @@ from .controllers.mediafile_controller import (
     Create,
     ApplyWatermark
 )
-from .controllers.user_controller import GoogleOAuthController, ProfileView, LogoutView
+from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, ProfileView, LogoutView
 
 
 urlpatterns = [
@@ -27,8 +27,8 @@ urlpatterns = [
     path("mediafiles/apply-watermark/<str:mediafile_id>", ApplyWatermark.as_view(), name="mediafile-apply-watermark"),
     # MEDIAFILES
     # AUTH
-    path('auth/google/', GoogleOAuthController.as_view(), name='google-auth'),
-    path('auth/google/callback/', GoogleOAuthController.as_view(), name='google-auth-callback'),
+    path('auth/google/', GoogleLoginView.as_view(), name='google_login'),
+    path('auth/google/callback/', GoogleCallbackView.as_view(), name='google_callback'),
     path('auth/profile/', ProfileView.as_view(), name='profile'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     # AUTH
