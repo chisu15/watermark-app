@@ -13,16 +13,11 @@ from .google_oauth_client import GoogleOAuthClient
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
-    client = WebApplicationClient(os.getenv('GOOGLE_CLIENT_ID'))
 
     def get(self, request, *args, **kwargs):
-        # Generate the Google login URL
-        url = self.client.prepare_request_uri(
-            "https://accounts.google.com/o/oauth2/auth",
-            redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
-            scope=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"],
-        )
-        return redirect(url)
+        google_client = GoogleOAuthClient()
+        # Redirect to Google login
+        return redirect(google_client.get_login_url())
 
 class GoogleCallbackView(APIView):
     permission_classes = [AllowAny]
@@ -63,7 +58,6 @@ class GoogleCallbackView(APIView):
 
         except Exception as e:
             return Response({"error": "Callback failed", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class ProfileView(APIView):
