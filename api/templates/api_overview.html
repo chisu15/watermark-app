@@ -155,14 +155,10 @@
                 <li>
                     <strong>Logout:</strong>
                     <span class="method method-post">POST</span>
-                    <a href="{% url 'logout' %}"
-                        >{% url 'logout' %}</a
-                    >
-                    <button
-                        onclick="copyToClipboard('{% url 'logout' %}')"
-                    >
-                        Copy URL
-                    </button>
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit">Logout</button>
+                    </form>
                 </li>
             </ul>
             <div class="footer">
