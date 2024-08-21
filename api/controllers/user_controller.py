@@ -92,20 +92,18 @@ class GoogleCallbackView(APIView):
             return Response({'error': 'Callback failed', 'message': str(error)}, status=400)
 
 class ProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def get(self, request, *args, **kwargs):
         try:
-            # Get token from cookie
+            # Lấy token từ cookie
             token = request.COOKIES.get('token')
             if not token:
                 return Response({"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED)
 
-            # Verify the token with Google
-            id_info = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
+            # Verify token với Google
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
 
-            # Find user by google_id from id_info
-            user = User.objects.get(google_id=id_info['sub'])
+            # Tìm người dùng bằng google_id từ payload
+            user = User.objects.get(google_id=idinfo['sub'])
             data = {
                 "id": str(user.id),
                 "username": user.username,
@@ -119,7 +117,7 @@ class ProfileView(APIView):
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as error:
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
-
+        
 class LogoutView(APIView):
     def post(self, request, *args, **kwargs):
         django_logout(request)
