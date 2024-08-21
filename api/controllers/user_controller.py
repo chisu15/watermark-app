@@ -120,7 +120,8 @@ class ProfileView(APIView):
         
 class LogoutView(APIView):
     def post(self, request, *args, **kwargs):
-        django_logout(request)
+        # Xóa cookie lưu trữ token
         response = Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
-        response.delete_cookie('token')
+        response.delete_cookie('token')  # Xóa cookie token
+        django_logout(request)  # Đăng xuất khỏi Django (nếu bạn dùng session-based auth)
         return response
