@@ -183,7 +183,7 @@ class ApplyWatermark(APIView):
             "position_y",
             "opacity",
             "size",
-            "color"
+            "color",
         ]
         for field in required_fields:
             if field not in data:
@@ -191,7 +191,6 @@ class ApplyWatermark(APIView):
                     {"error": f"Missing field: {field}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
 
         hex_color = data["color"]
         rgb_color = hex_to_rgb(hex_color)
@@ -226,10 +225,15 @@ class ApplyWatermark(APIView):
             font_size = int(watermark_options.size)
             font_path = os.path.join(settings.BASE_DIR, r"fonts\ROBOTO-BOLD.ttf")
             if not os.path.exists(font_path):
-                return Response({"error": "Font not found"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response(
+                    {
+                        "error": "Font not found",
+                        "path" : font_path
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
             font = ImageFont.truetype(font_path, font_size)
-
 
             text = watermark_options.content
             position = (watermark_options.position_x, watermark_options.position_y)
@@ -268,7 +272,7 @@ class ApplyWatermark(APIView):
 
             return Response(
                 {
-                    "code" : 200,
+                    "code": 200,
                     "message": "Watermark applied successfully",
                     "file_path": watermarked_url,
                 },
@@ -279,6 +283,9 @@ class ApplyWatermark(APIView):
                 {
                     "code": 500,
                     "error": str(e),
-                    "path_font": os.path.join(settings.BASE_DIR, r"fonts\ROBOTO-BOLD.ttf")
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    "path_font": os.path.join(
+                        settings.BASE_DIR, r"fonts\ROBOTO-BOLD.ttf"
+                    ),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
