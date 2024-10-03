@@ -225,8 +225,12 @@ class ApplyWatermark(APIView):
 
             draw = ImageDraw.Draw(txt)
             font_size = int(watermark_options.size)
-            font_path = os.path.join(settings.BASE_DIR, "fonts\ROBOTO-BOLD.ttf")
+            font_path = os.path.join(settings.BASE_DIR, "fonts", "Roboto-Bold.ttf")
+            if not os.path.exists(font_path):
+                return Response({"error": "Font not found"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             font = ImageFont.truetype(font_path, font_size)
+
 
             text = watermark_options.content
             position = (watermark_options.position_x, watermark_options.position_y)
