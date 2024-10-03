@@ -223,7 +223,7 @@ class ApplyWatermark(APIView):
 
             draw = ImageDraw.Draw(txt)
             font_size = int(watermark_options.size)
-            font_path = os.path.join(settings.BASE_DIR, r"fonts\ROBOTO-BOLD.ttf")
+            font_path = os.path.join(settings.BASE_DIR, r"fonts/ROBOTO-BOLD.ttf")
             if not os.path.exists(font_path):
                 return Response(
                     {
