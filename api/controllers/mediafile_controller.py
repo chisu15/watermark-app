@@ -224,7 +224,7 @@ class ApplyWatermark(APIView):
 
             draw = ImageDraw.Draw(txt)
             font_size = int(watermark_options.size)
-            font_path = os.path.join(settings.BASE_DIR, "arial.ttf")
+            font_path = os.path.join(settings.BASE_DIR, "ROBOTO-BOLD.ttf")
             font = ImageFont.truetype(font_path, font_size)
 
             text = watermark_options.content
