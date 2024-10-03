@@ -174,6 +174,7 @@ class ApplyWatermark(APIView):
             return Response(
                 {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
             )
+        print("SSDAdasd", os.path.join(settings.BASE_DIR, "fonts\ROBOTO-BOLD.ttf"))
         data = request.data
         # Kiểm tra xem các trường bắt buộc có trong yêu cầu không
         required_fields = [
@@ -224,7 +225,7 @@ class ApplyWatermark(APIView):
 
             draw = ImageDraw.Draw(txt)
             font_size = int(watermark_options.size)
-            font_path = os.path.join(settings.BASE_DIR, "ROBOTO-BOLD.ttf")
+            font_path = os.path.join(settings.BASE_DIR, "fonts\ROBOTO-BOLD.ttf")
             font = ImageFont.truetype(font_path, font_size)
 
             text = watermark_options.content
