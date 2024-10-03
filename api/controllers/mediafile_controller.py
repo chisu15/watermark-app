@@ -174,7 +174,6 @@ class ApplyWatermark(APIView):
             return Response(
                 {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        print("SSDAdasd", os.path.join(settings.BASE_DIR, "fonts\ROBOTO-BOLD.ttf"))
         data = request.data
         # Kiểm tra xem các trường bắt buộc có trong yêu cầu không
         required_fields = [
