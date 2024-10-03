@@ -193,7 +193,7 @@ class ApplyWatermark(APIView):
                 )
 
 
-        hex_color = data.get("color", "#000000")
+        hex_color = data["color"]
         rgb_color = hex_to_rgb(hex_color)
         watermark_options = Watermark(
             type=data["type"],
