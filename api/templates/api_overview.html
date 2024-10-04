@@ -125,6 +125,24 @@
                     }</pre
                     >
                 </li>
+                <li>
+                    <strong>List Font:</strong>
+                    <span class="method method-post">POST</span>
+                    <a href="{% url 'mediafile-font' %}"
+                        >{% url 'mediafile-font' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-font' %}')"
+                    >
+                        Copy URL
+                    </button>
+                    <button
+                        class="toggle-button"
+                        onclick="toggleData('watermark-data')"
+                    >
+                        Show Sample Data
+                    </button>
+                </li>
             </ul>
             <ul>
                 <h2>User API</h2>

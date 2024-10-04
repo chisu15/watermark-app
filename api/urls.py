@@ -26,9 +26,12 @@ urlpatterns = [
     
     path("mediafiles/delete/<str:mediafile_id>", Delete.as_view(), name="mediafile-delete"),
     
-    path("mediafiles/font/", GetListFont.as_view()),
+    path("mediafiles/font/", GetListFont.as_view(), name="mediafile-font"),
+    path("mediafiles/image/", GetListFont.as_view(), name="mediafile-font"),
+    
     
     path("mediafiles/apply-watermark/<str:mediafile_id>", ApplyWatermark.as_view(), name="mediafile-apply-watermark"),
+    
     # MEDIAFILES
     # AUTH
     path('auth/google/', GoogleLoginView.as_view(), name='google_login'),

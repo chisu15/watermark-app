@@ -100,10 +100,10 @@ class ProfileView(APIView):
                 return Response({"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED)
 
             # Verify token với Google
-            idinfo = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
+            idInfo = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
 
             # Tìm người dùng bằng google_id từ payload
-            user = User.objects.get(google_id=idinfo['sub'])
+            user = User.objects.get(google_id=idInfo['sub'])
             data = {
                 "id": str(user.id),
                 "username": user.username,
@@ -111,7 +111,11 @@ class ProfileView(APIView):
                 "profile_picture": user.profile_picture,
                 "last_login_time": user.last_login_time,
             }
-            return Response(data, status=status.HTTP_200_OK)
+            return Response({
+                "code": 200,
+                "message": "Media file updated",
+                "user": data
+            }, status=status.HTTP_200_OK)
 
         except User.DoesNotExist:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
