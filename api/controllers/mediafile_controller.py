@@ -47,7 +47,7 @@ class Index(APIView):
                 media_file_data["file_watermarked"] = request.build_absolute_uri(
                     media_file.file_watermarked
                 )
-            if media_file.created_by == dataUser.id:
+            if media_file.created_by == dataUser["id"]:
                 media_files_list.append(media_file_data)
 
         return Response(media_files_list, status=status.HTTP_200_OK)
@@ -125,7 +125,7 @@ class GetListImage(APIView):
                 )
             if (
                 media_file.file_type.startswith("image")
-                and media_file.created_by == dataUser.id
+                and media_file.created_by == dataUser["id"]
             ):
                 media_files_list.append(media_file_data)
 
@@ -182,7 +182,7 @@ class Create(APIView):
                 width=width,
                 height=height,
                 description=data.get("description", ""),
-                created_by=dataUser.id,
+                created_by=dataUser["id"],
             )
             media_file.save()
             return Response(
