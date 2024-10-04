@@ -13,7 +13,7 @@ from django.conf import settings
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from google.oauth2 import id_token
-
+from google.auth.transport import requests
 
 class Index(APIView):
     def get(self, request):
