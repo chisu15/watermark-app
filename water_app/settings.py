@@ -47,9 +47,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',  # Cần thiết cho django-allauth
+    'django.contrib.sites',
 
-    # Third-party apps
+
     'rest_framework',
 
     'corsheaders',
@@ -61,7 +61,7 @@ INSTALLED_APPS = [
     'dj_rest_auth.registration',
     'rest_framework.authtoken',
 
-    # Custom apps
+
     'water_app',
 ]
 LOGIN_REDIRECT_URL = '/auth/profile/'
@@ -78,12 +78,12 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "allauth.account.middleware.AccountMiddleware",
 ]
-# Cấu hình Site ID (bắt buộc bởi allauth)
+
 SITE_ID = 1
 
-# Cấu hình URL redirect sau khi đăng nhập thành công
+
 LOGIN_REDIRECT_URL = '/'
-# Đảm bảo xác thực bằng tài khoản xã hội được kích hoạt
+
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',

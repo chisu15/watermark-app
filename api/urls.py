@@ -6,10 +6,12 @@ from .controllers.mediafile_controller import (
     Detail,
     Edit,
     Create,
-    ApplyWatermark
+    ApplyWatermark,
+    GetListFont
 )
 from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, ProfileView, LogoutView
 
+from .controllers.font_controller import FontIndex, FontDetail, FontCreate
 
 urlpatterns = [
     path('', views.api_overview, name='api-overview'),
@@ -24,6 +26,8 @@ urlpatterns = [
     
     path("mediafiles/delete/<str:mediafile_id>", Delete.as_view(), name="mediafile-delete"),
     
+    path("mediafiles/font/", GetListFont.as_view()),
+    
     path("mediafiles/apply-watermark/<str:mediafile_id>", ApplyWatermark.as_view(), name="mediafile-apply-watermark"),
     # MEDIAFILES
     # AUTH
@@ -33,4 +37,11 @@ urlpatterns = [
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     
     # AUTH
+    
+    #FONT
+    # path('font/', FontIndex.as_view(), name="font-index"),
+    # path("font/create", FontCreate.as_view(), name="font-create"),
+
+    # path("font/detail/<str:font_id>", FontDetail.as_view(), name="font-detail"),
+    #FONT
 ]

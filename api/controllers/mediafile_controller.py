@@ -5,6 +5,7 @@ from django.core.files.storage import FileSystemStorage
 import uuid
 import os
 from ..models.mediafile_model import MediaFile, Watermark
+from ..models.font_model import Font
 from ..utils.json_encoder import CustomJSONEncoder
 from ..utils.json_utils import mongo_to_dict
 from django.conf import settings
@@ -46,6 +47,25 @@ class Detail(APIView):
         return Response(
             {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
         )
+
+class GetListFont(APIView):
+    def get(self, request):
+        media_files = MediaFile.objects.all()
+        media_files_list = []
+        for media_file in media_files:
+            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+            media_file_data["file_path"] = request.build_absolute_uri(
+                media_file.file_path
+            )
+            if media_file.file_watermarked:
+                media_file_data["file_watermarked"] = request.build_absolute_uri(
+                    media_file.file_watermarked
+                )
+            if media_file.file_type.startswith("font"):
+                media_files_list.append(media_file_data)
+                
+
+        return Response(media_files_list, status=status.HTTP_200_OK)
 
 
 class Create(APIView):
@@ -169,6 +189,7 @@ def hex_to_rgb(hex_color):
 
 class ApplyWatermark(APIView):
     def post(self, request, mediafile_id):
+    
         media_file = MediaFile.objects(id=mediafile_id).first()
         if not media_file:
             return Response(
@@ -184,6 +205,7 @@ class ApplyWatermark(APIView):
             "opacity",
             "size",
             "color",
+            "font_id"
         ]
         for field in required_fields:
             if field not in data:
@@ -192,8 +214,13 @@ class ApplyWatermark(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+        font = Font.objects(id=data["font_id"]).first()
+        if not font:
+            return Response({"error": "Font not found"}, status=status.HTTP_404_NOT_FOUND)
+
         hex_color = data["color"]
         rgb_color = hex_to_rgb(hex_color)
+        print(data)
         watermark_options = Watermark(
             type=data["type"],
             content=data["content"],
@@ -202,6 +229,7 @@ class ApplyWatermark(APIView):
             opacity=float(data["opacity"]),
             size=float(data["size"]),
             color=hex_color,
+            font = font.name
         )
 
         # Apply watermark to the image
@@ -223,17 +251,7 @@ class ApplyWatermark(APIView):
 
             draw = ImageDraw.Draw(txt)
             font_size = int(watermark_options.size)
-            font_path = os.path.join(settings.BASE_DIR, r"fonts/ROBOTO-BOLD.ttf")
-            if not os.path.exists(font_path):
-                return Response(
-                    {
-                        "error": "Font not found",
-                        "path" : font_path
-                    },
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
-
-            font = ImageFont.truetype(font_path, font_size)
+            fontUsed = ImageFont.truetype(font.file_path, font_size)
 
             text = watermark_options.content
             position = (watermark_options.position_x, watermark_options.position_y)
@@ -241,7 +259,7 @@ class ApplyWatermark(APIView):
             draw.text(
                 position,
                 text,
-                font=font,
+                font=fontUsed,
                 fill=(
                     rgb_color[0],
                     rgb_color[1],
