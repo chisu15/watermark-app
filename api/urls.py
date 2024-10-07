@@ -7,7 +7,8 @@ from .controllers.mediafile_controller import (
     Edit,
     Create,
     ApplyWatermark,
-    GetListFont
+    GetListFont,
+    GetListImage
 )
 from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, ProfileView, LogoutView
 
@@ -27,7 +28,7 @@ urlpatterns = [
     path("mediafiles/delete/<str:mediafile_id>", Delete.as_view(), name="mediafile-delete"),
     
     path("mediafiles/font/", GetListFont.as_view(), name="mediafile-font"),
-    path("mediafiles/image/", GetListFont.as_view(), name="mediafile-font"),
+    path("mediafiles/image/", GetListImage.as_view(), name="mediafile-font"),
     
     
     path("mediafiles/apply-watermark/<str:mediafile_id>", ApplyWatermark.as_view(), name="mediafile-apply-watermark"),

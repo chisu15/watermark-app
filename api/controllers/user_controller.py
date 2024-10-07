@@ -23,7 +23,9 @@ class GoogleLoginView(APIView):
             redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
             scope=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"],
         )
-        return redirect(url)
+        return Response({
+            "url": url
+        }, status=status.HTTP_200_OK)
 
 class GoogleCallbackView(APIView):
     permission_classes = [AllowAny]
