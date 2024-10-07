@@ -14,49 +14,131 @@ from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+# class Index(APIView):
+#     def get(self, request):
+#         # Lấy token từ cookie
+#         token = request.COOKIES.get("token")
+#         if not token:
+#             return Response(
+#                 {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
+#             )
+
+#         # Verify token với Google
+#         idInfo = id_token.verify_oauth2_token(
+#             token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+#         )
+#         user = User.objects.get(google_id=idInfo["sub"])
+#         dataUser = {
+#             "id": str(user.id),
+#             "username": user.username,
+#             "email": user.email,
+#             "profile_picture": user.profile_picture,
+#             "last_login_time": user.last_login_time,
+#         }
+#         media_files = MediaFile.objects.all()
+#         media_files_list = []
+#         for media_file in media_files:
+#             media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+#             media_file_data["file_path"] = request.build_absolute_uri(
+#                 media_file.file_path
+#             )
+#             if media_file.file_watermarked:
+#                 media_file_data["file_watermarked"] = request.build_absolute_uri(
+#                     media_file.file_watermarked
+#                 )
+#             if media_file.created_by == dataUser["id"]:
+#                 media_files_list.append(media_file_data)
+
+#         return Response(media_files_list, status=status.HTTP_200_OK)
 
 class Index(APIView):
-    def get(self, request):
-        # Lấy token từ cookie
-        token = request.COOKIES.get("token")
-        if not token:
+    def get(self, request, *args, **kwargs):
+        print(111111111111)
+        # Lấy token từ header
+        print("API called") 
+        print(request.headers)
+
+        auth_header = request.headers.get('Authorization')
+        if auth_header is None:
+            print("Authorization header is missing")
+        else:
+            print(f"Authorization header received: {auth_header}")
+        if not auth_header or not auth_header.startswith('Bearer '):
             return Response(
-                {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Verify token với Google
-        idInfo = id_token.verify_oauth2_token(
-            token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
-        )
-        user = User.objects.get(google_id=idInfo["sub"])
-        dataUser = {
-            "id": str(user.id),
-            "username": user.username,
-            "email": user.email,
-            "profile_picture": user.profile_picture,
-            "last_login_time": user.last_login_time,
-        }
-        media_files = MediaFile.objects.all()
-        media_files_list = []
-        for media_file in media_files:
-            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
-            media_file_data["file_path"] = request.build_absolute_uri(
-                media_file.file_path
+        # Tách và kiểm tra token
+        parts = auth_header.split(' ')
+        if len(parts) != 2:
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED
             )
-            if media_file.file_watermarked:
-                media_file_data["file_watermarked"] = request.build_absolute_uri(
-                    media_file.file_watermarked
-                )
-            if media_file.created_by == dataUser["id"]:
+        token = parts[1]
+
+        try:
+            # Verify token với Google
+            idInfo = id_token.verify_oauth2_token(
+                token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+            )
+
+            # Tìm user trong database
+            user = User.objects.get(google_id=idInfo["sub"])
+            dataUser = {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "profile_picture": user.profile_picture,
+                "last_login_time": user.last_login_time,
+            }
+
+            # Lấy tất cả các tệp phương tiện của người dùng
+            media_files = MediaFile.objects.filter(created_by=dataUser["id"])  # Chỉ lấy tệp do người dùng tạo
+            media_files_list = []
+            for media_file in media_files:
+                media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+                media_file_data["file_path"] = request.build_absolute_uri(media_file.file_path)
+                if media_file.file_watermarked:
+                    media_file_data["file_watermarked"] = request.build_absolute_uri(media_file.file_watermarked)
                 media_files_list.append(media_file_data)
 
-        return Response(media_files_list, status=status.HTTP_200_OK)
+            return Response(media_files_list, status=status.HTTP_200_OK)
 
-
+        except ValueError:
+            # Nếu token không hợp lệ
+            return Response(
+                {"detail": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            # Xử lý lỗi chung chung khác
+            return Response(
+                {"detail": "An error occurred: " + str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 class Detail(APIView):
     def get(self, request, mediafile_id):
-
+        # Lấy token từ cookie
+        # token = request.COOKIES.get("token")
+        # if not token:
+        #     return Response(
+        #         {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
+        #     )
         media_file = MediaFile.objects(id=mediafile_id).first()
+        font_path = media_file.file_path
+        font_path = font_path[len("/media") :]
+        font_path = font_path.lstrip("/")
+        absolute_font_path = os.path.normpath(
+            os.path.join(settings.MEDIA_ROOT, font_path)
+        )
+        print(absolute_font_path)
         if media_file:
             media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
             media_file_data["file_path"] = request.build_absolute_uri(
@@ -134,25 +216,24 @@ class GetListImage(APIView):
 
 class Create(APIView):
     def post(self, request):
-        # Lấy token từ cookie
-        token = request.COOKIES.get("token")
-        if not token:
-            return Response(
-                {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
-            )
 
-        # Verify token với Google
-        idInfo = id_token.verify_oauth2_token(
-            token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
-        )
-        user = User.objects.get(google_id=idInfo["sub"])
-        dataUser = {
-            "id": str(user.id),
-            "username": user.username,
-            "email": user.email,
-            "profile_picture": user.profile_picture,
-            "last_login_time": user.last_login_time,
-        }
+        # token = request.COOKIES.get("token")
+        # if not token:
+        #     return Response(
+        #         {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
+        #     )
+
+        # idInfo = id_token.verify_oauth2_token(
+        #     token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+        # )
+        # user = User.objects.get(google_id=idInfo["sub"])
+        # dataUser = {
+        #     "id": str(user.id),
+        #     "username": user.username,
+        #     "email": user.email,
+        #     "profile_picture": user.profile_picture,
+        #     "last_login_time": user.last_login_time,
+        # }
         data = request.data
         file = request.FILES.get("file")
         if file:
@@ -182,7 +263,7 @@ class Create(APIView):
                 width=width,
                 height=height,
                 description=data.get("description", ""),
-                created_by=dataUser["id"],
+                # created_by=dataUser["id"],
             )
             media_file.save()
             return Response(
@@ -306,7 +387,7 @@ class ApplyWatermark(APIView):
             "opacity",
             "size",
             "color",
-            "font_id",
+            "font",
         ]
         for field in required_fields:
             if field not in data:
@@ -314,12 +395,6 @@ class ApplyWatermark(APIView):
                     {"error": f"Missing field: {field}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
-        font = Font.objects(id=data["font_id"]).first()
-        if not font:
-            return Response(
-                {"error": "Font not found"}, status=status.HTTP_404_NOT_FOUND
-            )
 
         hex_color = data["color"]
         rgb_color = hex_to_rgb(hex_color)
@@ -332,7 +407,7 @@ class ApplyWatermark(APIView):
             opacity=float(data["opacity"]),
             size=float(data["size"]),
             color=hex_color,
-            font=font.name,
+            font=data["font"],
         )
 
         # Apply watermark to the image
@@ -354,7 +429,24 @@ class ApplyWatermark(APIView):
 
             draw = ImageDraw.Draw(txt)
             font_size = int(watermark_options.size)
-            fontUsed = ImageFont.truetype(font.file_path, font_size)
+            font = MediaFile.objects(id = watermark_options.font).first()
+            if not font:
+                return Response(
+                    {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
+                )
+
+            font_path = font.file_path
+            font_path = font_path[len("/media") :]
+            font_path = font_path.lstrip("/")
+            absolute_font_path = os.path.normpath(
+                os.path.join(settings.MEDIA_ROOT, font_path)
+            )
+            if not os.path.exists(absolute_font_path):
+                return Response(
+                    {"error": "File not found"}, status=status.HTTP_404_NOT_FOUND
+                )
+
+            fontUsed = ImageFont.truetype(absolute_font_path, font_size)
 
             text = watermark_options.content
             position = (watermark_options.position_x, watermark_options.position_y)

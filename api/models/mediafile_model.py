@@ -23,7 +23,7 @@ class MediaFile(me.Document):
     file_watermarked = me.StringField()
     created_at = me.DateTimeField(default=datetime.utcnow)
     updated_at = me.DateTimeField(default=datetime.utcnow)
-    created_by = me.StringField(max_length=255, required=True)
+    created_by = me.StringField(max_length=255, required=False)
 
     meta = {
         'collection': 'media_files',
