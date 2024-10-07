@@ -284,11 +284,11 @@ class Edit(APIView):
 class Delete(APIView):
     def delete(self, request, mediafile_id):
         # Lấy token từ cookie
-        token = request.COOKIES.get("token")
-        if not token:
-            return Response(
-                {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
-            )
+        # token = request.COOKIES.get("token")
+        # if not token:
+        #     return Response(
+        #         {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
+        #     )
         media_file = MediaFile.objects(id=mediafile_id).first()
         if not media_file:
             return Response(
@@ -317,11 +317,11 @@ def hex_to_rgb(hex_color):
 class ApplyWatermark(APIView):
     def post(self, request, mediafile_id):
         # Lấy token từ cookie
-        token = request.COOKIES.get("token")
-        if not token:
-            return Response(
-                {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
-            )
+        # token = request.COOKIES.get("token")
+        # if not token:
+        #     return Response(
+        #         {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
+        #     )
         media_file = MediaFile.objects(id=mediafile_id).first()
         if not media_file:
             return Response(
