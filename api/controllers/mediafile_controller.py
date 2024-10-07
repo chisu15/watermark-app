@@ -16,49 +16,9 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-# class Index(APIView):
-#     def get(self, request):
-#         # Lấy token từ cookie
-#         token = request.COOKIES.get("token")
-#         if not token:
-#             return Response(
-#                 {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
-#             )
-
-#         # Verify token với Google
-#         idInfo = id_token.verify_oauth2_token(
-#             token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
-#         )
-#         user = User.objects.get(google_id=idInfo["sub"])
-#         dataUser = {
-#             "id": str(user.id),
-#             "username": user.username,
-#             "email": user.email,
-#             "profile_picture": user.profile_picture,
-#             "last_login_time": user.last_login_time,
-#         }
-#         media_files = MediaFile.objects.all()
-#         media_files_list = []
-#         for media_file in media_files:
-#             media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
-#             media_file_data["file_path"] = request.build_absolute_uri(
-#                 media_file.file_path
-#             )
-#             if media_file.file_watermarked:
-#                 media_file_data["file_watermarked"] = request.build_absolute_uri(
-#                     media_file.file_watermarked
-#                 )
-#             if media_file.created_by == dataUser["id"]:
-#                 media_files_list.append(media_file_data)
-
-#         return Response(media_files_list, status=status.HTTP_200_OK)
 
 class Index(APIView):
-    def get(self, request, *args, **kwargs):
-        print(111111111111)
-        # Lấy token từ header
-        print("API called") 
-        print(request.headers)
+    def get(self, request):
 
         auth_header = request.headers.get('Authorization')
         if auth_header is None:
@@ -79,50 +39,40 @@ class Index(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         token = parts[1]
-
-        try:
-            # Verify token với Google
-            idInfo = id_token.verify_oauth2_token(
-                token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+        print("token: ", token)
+        
+        # Verify token với Google
+        idInfo = id_token.verify_oauth2_token(
+            token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+        )
+        
+        user = User.objects.get(google_id=idInfo["sub"])
+        print("idInfo: ", idInfo)
+        print("idInfo: ", str(user.id))
+        dataUser = {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "profile_picture": user.profile_picture,
+            "last_login_time": user.last_login_time,
+        }
+        media_files = MediaFile.objects.all()
+        media_files_list = []
+        for media_file in media_files:
+            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+            media_file_data["file_path"] = request.build_absolute_uri(
+                media_file.file_path
             )
-
-            # Tìm user trong database
-            user = User.objects.get(google_id=idInfo["sub"])
-            dataUser = {
-                "id": str(user.id),
-                "username": user.username,
-                "email": user.email,
-                "profile_picture": user.profile_picture,
-                "last_login_time": user.last_login_time,
-            }
-
-            # Lấy tất cả các tệp phương tiện của người dùng
-            media_files = MediaFile.objects.filter(created_by=dataUser["id"])  # Chỉ lấy tệp do người dùng tạo
-            media_files_list = []
-            for media_file in media_files:
-                media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
-                media_file_data["file_path"] = request.build_absolute_uri(media_file.file_path)
-                if media_file.file_watermarked:
-                    media_file_data["file_watermarked"] = request.build_absolute_uri(media_file.file_watermarked)
+            if media_file.file_watermarked:
+                media_file_data["file_watermarked"] = request.build_absolute_uri(
+                    media_file.file_watermarked
+                )
+            if media_file.created_by == dataUser["id"]:
                 media_files_list.append(media_file_data)
 
-            return Response(media_files_list, status=status.HTTP_200_OK)
+        return Response(media_files_list, status=status.HTTP_200_OK)
 
-        except ValueError:
-            # Nếu token không hợp lệ
-            return Response(
-                {"detail": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            # Xử lý lỗi chung chung khác
-            return Response(
-                {"detail": "An error occurred: " + str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+
 class Detail(APIView):
     def get(self, request, mediafile_id):
         # Lấy token từ cookie
