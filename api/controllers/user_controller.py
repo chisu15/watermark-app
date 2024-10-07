@@ -23,7 +23,9 @@ class GoogleLoginView(APIView):
             redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
             scope=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"],
         )
-        return redirect(url)
+        return Response({
+            "url": url
+        }, status=status.HTTP_200_OK)
 
 class GoogleCallbackView(APIView):
     permission_classes = [AllowAny]
@@ -83,8 +85,15 @@ class GoogleCallbackView(APIView):
             # Set the token as a cookie (if required)
             response = redirect(os.getenv('GOOGLE_REDIRECT_URI_FE'))
             response.set_cookie('token', tokens.get('id_token'), httponly=True, secure=True, samesite='None')
-            request.session['token'] = tokens['id_token']
-            return response
+            return Response({
+                "token": tokens.get('id_token'),
+                "user": {
+                    "username": user.username,
+                    "email": user.email,
+                    "profile_picture": user.profile_picture
+                }
+            }, status=status.HTTP_200_OK)
+            # return response
 
         except Exception as error:
             print(f'Error in callback: {error}')
