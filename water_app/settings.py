@@ -118,6 +118,7 @@ CORS_ALLOW_HEADERS = [
     'User-agent',
     'X-csrftoken',
     'X-requested-with',
+    'crossorigin'
 ]
 
 ROOT_URLCONF = "water_app.urls"
