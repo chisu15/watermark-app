@@ -106,6 +106,7 @@ class GoogleCallbackView(APIView):
             return Response({'error': 'Callback failed', 'message': str(error)}, status=400)
        
 class GetTokenView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request, *args, **kwargs):
         try:
             # Lấy token từ cookie
