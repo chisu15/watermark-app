@@ -9,7 +9,7 @@ class Watermark(me.EmbeddedDocument):
     opacity = me.FloatField(required=True)
     size = me.FloatField(required=True)
     color = me.StringField(required=True) 
-    font_id = me.StringField()
+    font_id = me.StringField(required=True)
 
 class MediaFile(me.Document):
     file_name = me.StringField(max_length=255, required=True)
