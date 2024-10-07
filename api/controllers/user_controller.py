@@ -27,11 +27,13 @@ class GoogleLoginView(APIView):
             "url": url
         }, status=status.HTTP_200_OK)
 
+
 class GoogleCallbackView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         try:
+            
             code = request.GET.get('code')
             if not code:
                 return Response({'error': 'Code is missing from query parameters'}, status=400)
@@ -85,6 +87,7 @@ class GoogleCallbackView(APIView):
             # Set the token as a cookie (if required)
             response = redirect(os.getenv('GOOGLE_REDIRECT_URI_FE'))
             response.set_cookie('token', tokens.get('id_token'), httponly=True, secure=True, samesite='None')
+            redirect(os.getenv('GOOGLE_REDIRECT_URI_FE'))
             return Response({
                 "token": tokens.get('id_token'),
                 "user": {
