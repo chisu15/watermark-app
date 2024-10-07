@@ -90,6 +90,7 @@ class GoogleCallbackView(APIView):
             print(f'Error in callback: {error}')
             return Response({'error': 'Callback failed', 'message': str(error)}, status=400)
         
+        
 class ProfileView(APIView):
     def get(self, request, *args, **kwargs):
         try:
