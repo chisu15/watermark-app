@@ -83,22 +83,24 @@ class GoogleCallbackView(APIView):
             # Set the token as a cookie (if required)
             response = redirect(os.getenv('GOOGLE_REDIRECT_URI_FE'))
             response.set_cookie('token', tokens.get('id_token'), httponly=True, secure=True, samesite='None')
-
+            request.session['token'] = tokens['id_token']
             return response
 
         except Exception as error:
             print(f'Error in callback: {error}')
             return Response({'error': 'Callback failed', 'message': str(error)}, status=400)
+        
 class ProfileView(APIView):
     def get(self, request, *args, **kwargs):
         try:
             # Lấy token từ cookie
             token = request.COOKIES.get('token')
-            if not token:
+            token_session = request.session.get('token')
+            if not token_session:
                 return Response({"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED)
 
             # Verify token với Google
-            idInfo = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
+            idInfo = id_token.verify_oauth2_token(token_session, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
 
             # Tìm người dùng bằng google_id từ payload
             user = User.objects.get(google_id=idInfo['sub'])
