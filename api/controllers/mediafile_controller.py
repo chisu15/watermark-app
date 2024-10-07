@@ -22,7 +22,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from PyPDF2 import PdfReader, PdfWriter
-
+import tempfile
 
 class Index(APIView):
     def get(self, request):
@@ -531,28 +531,96 @@ class ApplyWatermark(APIView):
                 )
 
         elif file_extension in [".mp4", ".mov", ".avi"]:
-            # Xử lý watermark cho video
             try:
+                # Load video
                 video = mp.VideoFileClip(absolute_file_path)
-                txt_clip = mp.TextClip(
-                    watermark_options.content,
-                    fontsize=int(watermark_options.size),
-                    color=watermark_options.color
-                ).set_position(
-                    (watermark_options.position_x, watermark_options.position_y)
-                ).set_duration(video.duration).set_opacity(watermark_options.opacity)
 
-                watermarked_video = mp.CompositeVideoClip([video, txt_clip])
+                watermark = None
+
+                if data["type"] == "text":
+                    # Chuyển đổi hex màu sang RGB
+                    hex_color = data["color"]
+                    rgb_color = hex_to_rgb(hex_color)
+
+                    # Lấy font từ database
+                    font = MediaFile.objects(id=data["font"]).first()
+                    if not font:
+                        return Response(
+                            {"error": "Font not found"}, status=status.HTTP_404_NOT_FOUND
+                        )
+
+                    font_path = font.file_path
+                    font_path = font_path[len("/media"):]
+                    font_path = font_path.lstrip("/")
+                    absolute_font_path = os.path.normpath(os.path.join(settings.MEDIA_ROOT, font_path))
+
+                    # Chuyển văn bản thành hình ảnh sử dụng Pillow
+                    text_image_path = text_to_image(
+                        data["content"],
+                        absolute_font_path,
+                        int(data["size"]),
+                        (rgb_color[0], rgb_color[1], rgb_color[2], int(float(data["opacity"]) * 255)),
+                    )
+
+                    # Load the text image as a watermark
+                    watermark = mp.ImageClip(text_image_path).set_duration(video.duration)
+
+                elif data["type"] == "image":
+                    # Xử lý file watermark_image được upload qua request
+                    watermark_image_file = request.FILES.get('watermark_image')
+                    if not watermark_image_file:
+                        return Response(
+                            {"error": "No watermark image provided"}, status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # Lưu file watermark tạm thời
+                    fs = FileSystemStorage()
+                    watermark_image_filename = fs.save(f"{uuid.uuid4()}_watermark.png", watermark_image_file)
+                    watermark_image_path = fs.path(watermark_image_filename)
+
+                    # Load the PNG image for the watermark
+                    watermark = mp.ImageClip(watermark_image_path).set_duration(video.duration)
+
+                if watermark is None:
+                    return Response(
+                        {"error": "Watermark type not supported"}, status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Đặt vị trí watermark
+                watermark = watermark.set_position(
+                    (float(data["position_x"]), float(data["position_y"]))
+                ).set_opacity(float(data["opacity"]))
+
+                # Composite video with watermark
+                watermarked_video = mp.CompositeVideoClip([video, watermark])
+
+                # Sử dụng FileSystemStorage để lưu video watermarked
                 fs = FileSystemStorage()
                 filename = str(uuid.uuid4()) + "_watermarked.mp4"
                 saved_filepath = fs.path(filename)
-                watermarked_video.write_videofile(saved_filepath)
 
-                media_file.file_watermarked = fs.url(filename)
+                # Ghi file video watermarked
+                watermarked_video.write_videofile(saved_filepath, codec="libx264")
+
+                # Lấy URL của file đã lưu
+                watermarked_url = fs.url(filename)
+
+                # Cập nhật thông tin file đã watermark trong database
+                media_file.file_watermarked = watermarked_url
                 media_file.save()
 
+                # Xóa file hình ảnh tạm nếu có
+                if data["type"] == "text":
+                    os.remove(text_image_path)
+                elif data["type"] == "image":
+                    os.remove(watermark_image_path)
+
                 return Response(
-                    {"code": 200, "message": "Watermark applied successfully", "file_path": media_file.file_watermarked},
+                    {
+                        "code": 200,
+                        "message": "Watermark applied successfully",
+                        "file_path": watermarked_url,
+                    },
                     status=status.HTTP_200_OK,
                 )
             except Exception as e:
@@ -560,7 +628,6 @@ class ApplyWatermark(APIView):
                     {"code": 500, "error": str(e)},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
-
         else:
             return Response({"error": "Unsupported file type"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -568,3 +635,30 @@ class ApplyWatermark(APIView):
             {"message": "Watermark applied successfully", "file_path": media_file.file_watermarked},
             status=status.HTTP_200_OK,
         )
+
+def text_to_image(text, font_path, font_size, text_color, image_size=(500, 100)):
+    # Tạo một hình ảnh mới với nền trong suốt
+    img = Image.new('RGBA', image_size, (255, 255, 255, 0))  
+    draw = ImageDraw.Draw(img)
+
+    # Load font
+    font = ImageFont.truetype(font_path, font_size)
+
+    # Lấy bounding box của văn bản
+    bbox = draw.textbbox((0, 0), text, font=font)
+
+    text_width = bbox[2] - bbox[0]  # Chiều rộng của văn bản
+    text_height = bbox[3] - bbox[1]  # Chiều cao của văn bản
+
+    # Tính toán vị trí để căn giữa văn bản
+    position = ((image_size[0] - text_width) // 2, (image_size[1] - text_height) // 2)
+
+    # Vẽ văn bản lên hình ảnh
+    draw.text(position, text, fill=text_color, font=font)
+
+    # Tạo tệp tạm thời để lưu hình ảnh watermark
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+        img.save(tmp_file.name, "PNG")
+        temp_image_path = tmp_file.name
+
+    return temp_image_path
