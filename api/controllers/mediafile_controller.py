@@ -16,78 +16,43 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
+import moviepy.editor as mp
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from PyPDF2 import PdfReader, PdfWriter
 
-def apply_watermark_to_video(input_video_path, watermark_text, output_video_path):
-    # Load the video
-    video = VideoFileClip(input_video_path)
 
-    # Create a text clip (watermark)
-    watermark = TextClip(watermark_text, fontsize=70, color='white')
-    watermark = watermark.set_pos(("right", "bottom")).set_duration(video.duration)
-
-    # Overlay the text watermark on the video
-    video = CompositeVideoClip([video, watermark])
-
-    # Write the result to a new file
-    video.write_videofile(output_video_path, codec="libx264")
-    
-def apply_watermark_to_pdf(input_pdf_path, watermark_text, output_pdf_path):
-    # Create a PDF with the watermark text
-    packet = BytesIO()
-    can = canvas.Canvas(packet, pagesize=letter)
-    can.drawString(100, 100, watermark_text)  # Adjust position and text
-    can.save()
-
-    # Move to the beginning of the BytesIO buffer
-    packet.seek(0)
-
-    # Read the existing PDF
-    existing_pdf = PdfFileReader(open(input_pdf_path, "rb"))
-    output = PdfFileWriter()
-
-    # Read the watermark PDF
-    watermark = PdfFileReader(packet)
-
-    # Add watermark to each page of the PDF
-    for i in range(existing_pdf.getNumPages()):
-        page = existing_pdf.getPage(i)
-        page.mergePage(watermark.getPage(0))
-        output.addPage(page)
-
-    # Write the watermarked PDF to a new file
-    with open(output_pdf_path, "wb") as outputStream:
-        output.write(outputStream)
-        
 class Index(APIView):
     def get(self, request):
 
-        auth_header = request.headers.get('Authorization')
+        auth_header = request.headers.get("Authorization")
         if auth_header is None:
             print("Authorization header is missing")
         else:
             print(f"Authorization header received: {auth_header}")
-        if not auth_header or not auth_header.startswith('Bearer '):
+        if not auth_header or not auth_header.startswith("Bearer "):
             return Response(
                 {"detail": "Token not provided or invalid format"},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         # Tách và kiểm tra token
-        parts = auth_header.split(' ')
+        parts = auth_header.split(" ")
         if len(parts) != 2:
             return Response(
                 {"detail": "Token not provided or invalid format"},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
         token = parts[1]
         print("token: ", token)
-        
+
         # Verify token với Google
         idInfo = id_token.verify_oauth2_token(
             token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
         )
-        
+
         user = User.objects.get(google_id=idInfo["sub"])
         print("idInfo: ", idInfo)
         print("idInfo: ", str(user.id))
@@ -167,18 +132,35 @@ class GetListFont(APIView):
 
 class GetListImage(APIView):
     def get(self, request):
-        # Lấy token từ cookie
-        token = request.COOKIES.get("token")
-        if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header is None:
+            print("Authorization header is missing")
+        else:
+            print(f"Authorization header received: {auth_header}")
+        if not auth_header or not auth_header.startswith("Bearer "):
             return Response(
-                {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
+
+        # Tách và kiểm tra token
+        parts = auth_header.split(" ")
+        if len(parts) != 2:
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        token = parts[1]
+        print("token: ", token)
 
         # Verify token với Google
         idInfo = id_token.verify_oauth2_token(
             token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
         )
+
         user = User.objects.get(google_id=idInfo["sub"])
+        print("idInfo: ", idInfo)
+        print("idInfo: ", str(user.id))
         dataUser = {
             "id": str(user.id),
             "username": user.username,
@@ -209,23 +191,42 @@ class GetListImage(APIView):
 class Create(APIView):
     def post(self, request):
 
-        # token = request.COOKIES.get("token")
-        # if not token:
-        #     return Response(
-        #         {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
-        #     )
+        auth_header = request.headers.get("Authorization")
+        if auth_header is None:
+            print("Authorization header is missing")
+        else:
+            print(f"Authorization header received: {auth_header}")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
-        # idInfo = id_token.verify_oauth2_token(
-        #     token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
-        # )
-        # user = User.objects.get(google_id=idInfo["sub"])
-        # dataUser = {
-        #     "id": str(user.id),
-        #     "username": user.username,
-        #     "email": user.email,
-        #     "profile_picture": user.profile_picture,
-        #     "last_login_time": user.last_login_time,
-        # }
+        # Tách và kiểm tra token
+        parts = auth_header.split(" ")
+        if len(parts) != 2:
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        token = parts[1]
+        print("token: ", token)
+
+        # Verify token với Google
+        idInfo = id_token.verify_oauth2_token(
+            token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+        )
+
+        user = User.objects.get(google_id=idInfo["sub"])
+        print("idInfo: ", idInfo)
+        print("idInfo: ", str(user.id))
+        dataUser = {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "profile_picture": user.profile_picture,
+            "last_login_time": user.last_login_time,
+        }
         data = request.data
         file = request.FILES.get("file")
         if file:
@@ -255,7 +256,7 @@ class Create(APIView):
                 width=width,
                 height=height,
                 description=data.get("description", ""),
-                # created_by=dataUser["id"],
+                created_by=dataUser["id"],
             )
             media_file.save()
             return Response(
@@ -269,11 +270,23 @@ class Create(APIView):
 
 class Edit(APIView):
     def patch(self, request, mediafile_id):
-        # Lấy token từ cookie
-        token = request.COOKIES.get("token")
-        if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header is None:
+            print("Authorization header is missing")
+        else:
+            print(f"Authorization header received: {auth_header}")
+        if not auth_header or not auth_header.startswith("Bearer "):
             return Response(
-                {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        # Tách và kiểm tra token
+        parts = auth_header.split(" ")
+        if len(parts) != 2:
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
         media_file = MediaFile.objects(id=mediafile_id).first()
         if not media_file:
@@ -325,12 +338,25 @@ class Edit(APIView):
 
 class Delete(APIView):
     def delete(self, request, mediafile_id):
-        # Lấy token từ cookie
-        # token = request.COOKIES.get("token")
-        # if not token:
-        #     return Response(
-        #         {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
-        #     )
+        auth_header = request.headers.get("Authorization")
+        if auth_header is None:
+            print("Authorization header is missing")
+        else:
+            print(f"Authorization header received: {auth_header}")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        # Tách và kiểm tra token
+        parts = auth_header.split(" ")
+        if len(parts) != 2:
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
         media_file = MediaFile.objects(id=mediafile_id).first()
         if not media_file:
             return Response(
@@ -357,155 +383,18 @@ def hex_to_rgb(hex_color):
 
 
 class ApplyWatermark(APIView):
-    # def post(self, request, mediafile_id):
-    #     # Lấy token từ cookie
-    #     # token = request.COOKIES.get("token")
-    #     # if not token:
-    #     #     return Response(
-    #     #         {"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED
-    #     #     )
-    #     media_file = MediaFile.objects(id=mediafile_id).first()
-    #     if not media_file:
-    #         return Response(
-    #             {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
-    #         )
-    #     data = request.data
-    #     # Kiểm tra xem các trường bắt buộc có trong yêu cầu không
-    #     required_fields = [
-    #         "type",
-    #         "content",
-    #         "position_x",
-    #         "position_y",
-    #         "opacity",
-    #         "size",
-    #         "color",
-    #         "font",
-    #     ]
-    #     for field in required_fields:
-    #         if field not in data:
-    #             return Response(
-    #                 {"error": f"Missing field: {field}"},
-    #                 status=status.HTTP_400_BAD_REQUEST,
-    #             )
-
-    #     hex_color = data["color"]
-    #     rgb_color = hex_to_rgb(hex_color)
-    #     print(data)
-    #     watermark_options = Watermark(
-    #         type=data["type"],
-    #         content=data["content"],
-    #         position_x=float(data["position_x"]),
-    #         position_y=float(data["position_y"]),
-    #         opacity=float(data["opacity"]),
-    #         size=float(data["size"]),
-    #         color=hex_color,
-    #         font=data["font"],
-    #     )
-
-    #     # Apply watermark to the image
-    #     file_path = media_file.file_path
-    #     file_path = file_path[len("/media") :]
-    #     file_path = file_path.lstrip("/")
-    #     absolute_file_path = os.path.normpath(
-    #         os.path.join(settings.MEDIA_ROOT, file_path)
-    #     )
-
-    #     if not os.path.exists(absolute_file_path):
-    #         return Response(
-    #             {"error": "File not found"}, status=status.HTTP_404_NOT_FOUND
-    #         )
-
-    #     try:
-    #         image = Image.open(absolute_file_path).convert("RGBA")
-    #         txt = Image.new("RGBA", image.size, (255, 255, 255, 0))
-
-    #         draw = ImageDraw.Draw(txt)
-    #         font_size = int(watermark_options.size)
-    #         font = MediaFile.objects(id = watermark_options.font).first()
-    #         if not font:
-    #             return Response(
-    #                 {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
-    #             )
-
-    #         font_path = font.file_path
-    #         font_path = font_path[len("/media") :]
-    #         font_path = font_path.lstrip("/")
-    #         absolute_font_path = os.path.normpath(
-    #             os.path.join(settings.MEDIA_ROOT, font_path)
-    #         )
-    #         if not os.path.exists(absolute_font_path):
-    #             return Response(
-    #                 {"error": "File not found"}, status=status.HTTP_404_NOT_FOUND
-    #             )
-
-    #         fontUsed = ImageFont.truetype(absolute_font_path, font_size)
-
-    #         text = watermark_options.content
-    #         position = (watermark_options.position_x, watermark_options.position_y)
-
-    #         draw.text(
-    #             position,
-    #             text,
-    #             font=fontUsed,
-    #             fill=(
-    #                 rgb_color[0],
-    #                 rgb_color[1],
-    #                 rgb_color[2],
-    #                 int(watermark_options.opacity * 255),
-    #             ),
-    #         )
-
-    #         watermarked = Image.alpha_composite(image, txt)
-    #         watermarked = watermarked.convert("RGB")
-
-    #         # SAVE FILE
-    #         fs = FileSystemStorage()
-    #         extension = os.path.splitext(file_path)[1]
-    #         filename = str(uuid.uuid4()) + "_watermarked" + extension
-
-    #         # Save image to BytesIO
-    #         img_io = BytesIO()
-    #         watermarked.save(img_io, format=watermarked.format or "PNG")
-    #         img_io.seek(0)  # Đặt lại con trỏ về đầu stream
-
-    #         saved_filename = fs.save(filename, img_io)
-    #         watermarked_url = fs.url(saved_filename)
-
-    #         media_file.watermark_options = watermark_options
-    #         media_file.file_watermarked = watermarked_url
-    #         media_file.save()
-
-    #         return Response(
-    #             {
-    #                 "code": 200,
-    #                 "message": "Watermark applied successfully",
-    #                 "file_path": watermarked_url,
-    #             },
-    #             status=status.HTTP_200_OK,
-    #         )
-    #     except Exception as e:
-    #         return Response(
-    #             {
-    #                 "code": 500,
-    #                 "error": str(e),
-    #                 "path_font": os.path.join(
-    #                     settings.BASE_DIR, r"fonts\ROBOTO-BOLD.ttf"
-    #                 ),
-    #             },
-    #             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #         )
-
-
     def post(self, request, mediafile_id):
         media_file = MediaFile.objects(id=mediafile_id).first()
         if not media_file:
             return Response(
                 {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         data = request.data
         hex_color = data["color"]
         rgb_color = hex_to_rgb(hex_color)
-        print(data)
+
+        # Lấy thông tin watermark từ request
         watermark_options = Watermark(
             type=data["type"],
             content=data["content"],
@@ -517,113 +406,165 @@ class ApplyWatermark(APIView):
             font_id=data["font"],
         )
 
+        # Đường dẫn file
         file_extension = os.path.splitext(media_file.file_path)[1].lower()
         file_path = media_file.file_path
-        file_path = file_path[len("/media") :]
+        file_path = file_path[len("/media"):]
         file_path = file_path.lstrip("/")
         absolute_file_path = os.path.normpath(
             os.path.join(settings.MEDIA_ROOT, file_path)
         )
-        if file_extension in ['.jpg', '.jpeg', '.png']:
-            # Xử lý watermark cho hình ảnh (đã có ở phần code hiện tại của bạn)
+
+        # Lấy font từ database
+        font = MediaFile.objects(id=watermark_options.font_id).first()
+        if not font:
+            return Response(
+                {"error": "Font not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        font_path = font.file_path
+        font_path = font_path[len("/media"):]
+        font_path = font_path.lstrip("/")
+        absolute_font_path = os.path.normpath(
+            os.path.join(settings.MEDIA_ROOT, font_path)
+        )
+
+        if not os.path.exists(absolute_font_path):
+            return Response(
+                {"error": "Font file not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        fontUsed = ImageFont.truetype(absolute_font_path, int(watermark_options.size))
+
+        if file_extension in [".jpg", ".jpeg", ".png"]:
+            # Xử lý watermark cho hình ảnh
             try:
                 image = Image.open(absolute_file_path).convert("RGBA")
                 txt = Image.new("RGBA", image.size, (255, 255, 255, 0))
-
                 draw = ImageDraw.Draw(txt)
-                font_size = int(watermark_options.size)
-                font = MediaFile.objects(id = watermark_options.font_id).first()
-                if not font:
-                    return Response(
-                        {"error": "Media file not found"}, status=status.HTTP_404_NOT_FOUND
-                    )
-
-                font_path = font.file_path
-                font_path = font_path[len("/media") :]
-                font_path = font_path.lstrip("/")
-                absolute_font_path = os.path.normpath(
-                    os.path.join(settings.MEDIA_ROOT, font_path)
-                )
-                if not os.path.exists(absolute_font_path):
-                    return Response(
-                        {"error": "File not found"}, status=status.HTTP_404_NOT_FOUND
-                    )
-
-                fontUsed = ImageFont.truetype(absolute_font_path, font_size)
-
-                text = watermark_options.content
-                position = (watermark_options.position_x, watermark_options.position_y)
 
                 draw.text(
-                    position,
-                    text,
+                    (watermark_options.position_x, watermark_options.position_y),
+                    watermark_options.content,
                     font=fontUsed,
-                    fill=(
-                        rgb_color[0],
-                        rgb_color[1],
-                        rgb_color[2],
-                        int(watermark_options.opacity * 255),
-                    ),
+                    fill=(rgb_color[0], rgb_color[1], rgb_color[2], int(watermark_options.opacity * 255))
                 )
 
-                watermarked = Image.alpha_composite(image, txt)
-                watermarked = watermarked.convert("RGB")
+                watermarked = Image.alpha_composite(image, txt).convert("RGB")
 
                 # SAVE FILE
                 fs = FileSystemStorage()
-                extension = os.path.splitext(file_path)[1]
-                filename = str(uuid.uuid4()) + "_watermarked" + extension
-
-                # Save image to BytesIO
+                filename = str(uuid.uuid4()) + "_watermarked" + file_extension
                 img_io = BytesIO()
-                watermarked.save(img_io, format=watermarked.format or "PNG")
-                img_io.seek(0)  # Đặt lại con trỏ về đầu stream
+                watermarked.save(img_io, format="PNG")
+                img_io.seek(0)
 
                 saved_filename = fs.save(filename, img_io)
                 watermarked_url = fs.url(saved_filename)
 
-                media_file.watermark_options = watermark_options
                 media_file.file_watermarked = watermarked_url
                 media_file.save()
 
                 return Response(
-                    {
-                        "code": 200,
-                        "message": "Watermark applied successfully",
-                        "file_path": watermarked_url,
-                    },
+                    {"code": 200, "message": "Watermark applied successfully", "file_path": watermarked_url},
                     status=status.HTTP_200_OK,
                 )
             except Exception as e:
                 return Response(
-                    {
-                        "code": 500,
-                        "error": str(e),
-                        "path_font": os.path.join(
-                            settings.BASE_DIR, r"fonts\ROBOTO-BOLD.ttf"
-                        ),
-                    },
+                    {"code": 500, "error": str(e)},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
-            pass
-        elif file_extension == '.pdf':
-            # Xử lý watermark cho PDF
-            watermark_text = request.data.get('content')
-            output_pdf_path = apply_watermark_to_pdf(media_file.file_path, watermark_text)
-            # Cập nhật lại URL sau khi áp dụng watermark
-            media_file.file_watermarked = output_pdf_path
-            media_file.save()
-        elif file_extension in ['.mp4', '.mov', '.avi']:
+
+        elif file_extension == ".pdf":
+            try:
+                # Register custom font
+                pdfmetrics.registerFont(TTFont('CustomFont', absolute_font_path))
+
+                # Tạo watermark với font custom
+                packet = BytesIO()
+                can = canvas.Canvas(packet, pagesize=letter)
+                can.setFont('CustomFont', watermark_options.size)  # Sử dụng font từ absolute_font_path
+                can.setFillColorRGB(rgb_color[0]/255, rgb_color[1]/255, rgb_color[2]/255, watermark_options.opacity)
+                can.drawString(watermark_options.position_x, watermark_options.position_y, watermark_options.content)
+                can.save()
+
+                # Di chuyển vị trí đầu tiên của packet để đọc lại
+                packet.seek(0)
+                watermark_pdf = PdfReader(packet)
+
+                # Đọc PDF gốc và chuẩn bị để thêm watermark
+                original_pdf = PdfReader(open(absolute_file_path, "rb"))
+                output_pdf = PdfWriter()
+
+                watermark_page = watermark_pdf.pages[0]
+
+                # Thêm watermark vào từng trang
+                for page_number in range(len(original_pdf.pages)):
+                    original_page = original_pdf.pages[page_number]
+                    original_page.merge_page(watermark_page)  # Thêm watermark vào mỗi trang
+                    output_pdf.add_page(original_page)
+
+                # Sử dụng BytesIO để lưu PDF
+                pdf_io = BytesIO()
+                output_pdf.write(pdf_io)
+                pdf_io.seek(0)  # Đặt lại con trỏ về đầu stream
+
+                # Lưu PDF watermarked vào FileSystemStorage
+                fs = FileSystemStorage()
+                filename = str(uuid.uuid4()) + "_watermarked.pdf"
+                saved_filename = fs.save(filename, pdf_io)
+                watermarked_url = fs.url(saved_filename)
+
+                # Cập nhật file watermarked trong database
+                media_file.file_watermarked = watermarked_url
+                media_file.save()
+
+                return Response(
+                    {"code": 200, "message": "Watermark applied successfully", "file_path": media_file.file_watermarked},
+                    status=status.HTTP_200_OK,
+                )
+
+            except Exception as e:
+                return Response(
+                    {"code": 500, "error": str(e)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+        elif file_extension in [".mp4", ".mov", ".avi"]:
             # Xử lý watermark cho video
-            watermark_text = request.data.get('content')
-            output_video_path = apply_watermark_to_video(media_file.file_path, watermark_text)
-            # Cập nhật lại URL sau khi áp dụng watermark
-            media_file.file_watermarked = output_video_path
-            media_file.save()
+            try:
+                video = mp.VideoFileClip(absolute_file_path)
+                txt_clip = mp.TextClip(
+                    watermark_options.content,
+                    fontsize=int(watermark_options.size),
+                    color=watermark_options.color
+                ).set_position(
+                    (watermark_options.position_x, watermark_options.position_y)
+                ).set_duration(video.duration).set_opacity(watermark_options.opacity)
+
+                watermarked_video = mp.CompositeVideoClip([video, txt_clip])
+                fs = FileSystemStorage()
+                filename = str(uuid.uuid4()) + "_watermarked.mp4"
+                saved_filepath = fs.path(filename)
+                watermarked_video.write_videofile(saved_filepath)
+
+                media_file.file_watermarked = fs.url(filename)
+                media_file.save()
+
+                return Response(
+                    {"code": 200, "message": "Watermark applied successfully", "file_path": media_file.file_watermarked},
+                    status=status.HTTP_200_OK,
+                )
+            except Exception as e:
+                return Response(
+                    {"code": 500, "error": str(e)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
         else:
             return Response({"error": "Unsupported file type"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {"message": "Watermark applied successfully", "file_path": media_file.file_watermarked},
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
