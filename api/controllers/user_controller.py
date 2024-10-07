@@ -80,7 +80,6 @@ class GoogleCallbackView(APIView):
                 user.last_login_time = datetime.utcnow()
 
             user.save()
-
             # Set the token as a cookie (if required)
             response = redirect(os.getenv('GOOGLE_REDIRECT_URI_FE'))
             response.set_cookie('token', tokens.get('id_token'), httponly=True, secure=True, samesite='None')
