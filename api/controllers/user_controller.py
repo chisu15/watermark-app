@@ -12,6 +12,7 @@ import os
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
+
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
     client = WebApplicationClient(os.getenv('GOOGLE_CLIENT_ID'))
@@ -23,17 +24,18 @@ class GoogleLoginView(APIView):
             redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
             scope=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"],
         )
-        return Response({
-            "url": url
-        }, status=status.HTTP_200_OK)
+        # return Response({
+        #     "url": url
+        # }, status=status.HTTP_200_OK)
+        return redirect(url)
 
-
+tokenLocal = ''
 class GoogleCallbackView(APIView):
     permission_classes = [AllowAny]
-
+    
     def get(self, request, *args, **kwargs):
         try:
-            
+            tokenLocal = ""
             code = request.GET.get('code')
             if not code:
                 return Response({'error': 'Code is missing from query parameters'}, status=400)
@@ -84,36 +86,56 @@ class GoogleCallbackView(APIView):
                 user.last_login_time = datetime.utcnow()
 
             user.save()
+            tokenLocal = tokens.get('id_token')
             # Set the token as a cookie (if required)
             response = redirect(os.getenv('GOOGLE_REDIRECT_URI_FE'))
             response.set_cookie('token', tokens.get('id_token'), httponly=True, secure=True, samesite='None')
             redirect(os.getenv('GOOGLE_REDIRECT_URI_FE'))
-            return Response({
-                "token": tokens.get('id_token'),
-                "user": {
-                    "username": user.username,
-                    "email": user.email,
-                    "profile_picture": user.profile_picture
-                }
-            }, status=status.HTTP_200_OK)
-            # return response
+            # return Response({
+            #     "token": tokens.get('id_token'),
+            #     "user": {
+            #         "username": user.username,
+            #         "email": user.email,
+            #         "profile_picture": user.profile_picture
+            #     }
+            # }, status=status.HTTP_200_OK)
+            return response
 
         except Exception as error:
             print(f'Error in callback: {error}')
             return Response({'error': 'Callback failed', 'message': str(error)}, status=400)
-        
+       
+class GetTokenView(APIView):
+    def get(self, request, *args, **kwargs):
+        try:
+            # Lấy token từ cookie
+            token = request.COOKIES.get('token')
+            if not token:
+                return Response({"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Verify token với Google
+            idInfo = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
+
+            return Response({
+                "code": 200,
+                "token": token 
+            }, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST) 
         
 class ProfileView(APIView):
     def get(self, request, *args, **kwargs):
         try:
             # Lấy token từ cookie
             token = request.COOKIES.get('token')
-            token_session = request.session.get('token')
-            if not token_session:
+            if not token:
                 return Response({"detail": "Token not provided"}, status=status.HTTP_401_UNAUTHORIZED)
 
             # Verify token với Google
-            idInfo = id_token.verify_oauth2_token(token_session, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
+            idInfo = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
 
             # Tìm người dùng bằng google_id từ payload
             user = User.objects.get(google_id=idInfo['sub'])
@@ -126,7 +148,6 @@ class ProfileView(APIView):
             }
             return Response({
                 "code": 200,
-                "message": "Media file updated",
                 "user": data
             }, status=status.HTTP_200_OK)
 

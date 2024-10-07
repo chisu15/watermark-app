@@ -127,12 +127,30 @@
                 </li>
                 <li>
                     <strong>List Font:</strong>
-                    <span class="method method-post">POST</span>
+                    <span class="method method-get">get</span>
                     <a href="{% url 'mediafile-font' %}"
                         >{% url 'mediafile-font' %}</a
                     >
                     <button
                         onclick="copyToClipboard('{% url 'mediafile-font' %}')"
+                    >
+                        Copy URL
+                    </button>
+                    <button
+                        class="toggle-button"
+                        onclick="toggleData('watermark-data')"
+                    >
+                        Show Sample Data
+                    </button>
+                </li>
+                <li>
+                    <strong>List Image:</strong>
+                    <span class="method method-get">GET</span>
+                    <a href="{% url 'mediafile-image' %}"
+                        >{% url 'mediafile-image' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-image' %}')"
                     >
                         Copy URL
                     </button>
@@ -185,6 +203,18 @@
                         {% csrf_token %}
                         <button type="submit">Logout</button>
                     </form>
+                </li>
+                <li>
+                    <strong>Get Token:</strong>
+                    <span class="method method-get">GET</span>
+                    <a href="{% url 'get-token' %}"
+                        >{% url 'get-token' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'get-token' %}')"
+                    >
+                        Copy URL
+                    </button>
                 </li>
             </ul>
             <div class="footer">

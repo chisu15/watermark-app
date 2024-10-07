@@ -10,7 +10,7 @@ from .controllers.mediafile_controller import (
     GetListFont,
     GetListImage
 )
-from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, ProfileView, LogoutView
+from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, ProfileView, LogoutView, GetTokenView
 
 from .controllers.font_controller import FontIndex, FontDetail, FontCreate
 
@@ -28,7 +28,7 @@ urlpatterns = [
     path("mediafiles/delete/<str:mediafile_id>", Delete.as_view(), name="mediafile-delete"),
     
     path("mediafiles/font/", GetListFont.as_view(), name="mediafile-font"),
-    path("mediafiles/image/", GetListImage.as_view(), name="mediafile-font"),
+    path("mediafiles/image/", GetListImage.as_view(), name="mediafile-image"),
     
     
     path("mediafiles/apply-watermark/<str:mediafile_id>", ApplyWatermark.as_view(), name="mediafile-apply-watermark"),
@@ -38,6 +38,7 @@ urlpatterns = [
     path('auth/google/', GoogleLoginView.as_view(), name='google_login'),
     path('auth/google/callback/', GoogleCallbackView.as_view(), name='google_callback'),
     path('auth/profile/', ProfileView.as_view(), name='profile'),
+    path('auth/get-token/', GetTokenView.as_view(), name='get-token'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     
     # AUTH
