@@ -161,6 +161,42 @@
                         Show Sample Data
                     </button>
                 </li>
+                <li>
+                    <strong>List Video:</strong>
+                    <span class="method method-get">GET</span>
+                    <a href="{% url 'mediafile-video' %}"
+                        >{% url 'mediafile-video' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-video' %}')"
+                    >
+                        Copy URL
+                    </button>
+                    <button
+                        class="toggle-button"
+                        onclick="toggleData('watermark-data')"
+                    >
+                        Show Sample Data
+                    </button>
+                </li>
+                <li>
+                    <strong>List PDF:</strong>
+                    <span class="method method-get">GET</span>
+                    <a href="{% url 'mediafile-pdf' %}"
+                        >{% url 'mediafile-pdf' %}</a
+                    >
+                    <button
+                        onclick="copyToClipboard('{% url 'mediafile-pdf' %}')"
+                    >
+                        Copy URL
+                    </button>
+                    <button
+                        class="toggle-button"
+                        onclick="toggleData('watermark-data')"
+                    >
+                        Show Sample Data
+                    </button>
+                </li>
             </ul>
             <ul>
                 <h2>User API</h2>

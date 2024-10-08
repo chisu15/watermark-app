@@ -8,7 +8,9 @@ from .controllers.mediafile_controller import (
     Create,
     ApplyWatermark,
     GetListFont,
-    GetListImage
+    GetListImage,
+    GetListVideo,
+    GetListPDF
 )
 from .controllers.user_controller import GoogleLoginView, GoogleCallbackView, ProfileView, LogoutView, GetTokenView
 
@@ -29,7 +31,8 @@ urlpatterns = [
     
     path("mediafiles/font/", GetListFont.as_view(), name="mediafile-font"),
     path("mediafiles/image/", GetListImage.as_view(), name="mediafile-image"),
-    
+    path("mediafiles/video/", GetListVideo.as_view(), name="mediafile-video"),
+    path("mediafiles/pdf/", GetListPDF.as_view(), name="mediafile-pdf"),
     
     path("mediafiles/apply-watermark/<str:mediafile_id>", ApplyWatermark.as_view(), name="mediafile-apply-watermark"),
     

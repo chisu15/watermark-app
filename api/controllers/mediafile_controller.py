@@ -187,6 +187,178 @@ class GetListImage(APIView):
 
         return Response(media_files_list, status=status.HTTP_200_OK)
 
+class GetListVideo(APIView):
+    def get(self, request):
+        auth_header = request.headers.get("Authorization")
+        if auth_header is None:
+            print("Authorization header is missing")
+        else:
+            print(f"Authorization header received: {auth_header}")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        # Tách và kiểm tra token
+        parts = auth_header.split(" ")
+        if len(parts) != 2:
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        token = parts[1]
+        print("token: ", token)
+
+        # Verify token với Google
+        idInfo = id_token.verify_oauth2_token(
+            token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+        )
+
+        user = User.objects.get(google_id=idInfo["sub"])
+        print("idInfo: ", idInfo)
+        print("idInfo: ", str(user.id))
+        dataUser = {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "profile_picture": user.profile_picture,
+            "last_login_time": user.last_login_time,
+        }
+        media_files = MediaFile.objects.all()
+        media_files_list = []
+        for media_file in media_files:
+            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+            media_file_data["file_path"] = request.build_absolute_uri(
+                media_file.file_path
+            )
+            if media_file.file_watermarked:
+                media_file_data["file_watermarked"] = request.build_absolute_uri(
+                    media_file.file_watermarked
+                )
+            if (
+                media_file.file_type.startswith("video")
+                and media_file.created_by == dataUser["id"]
+            ):
+                media_files_list.append(media_file_data)
+
+        return Response(media_files_list, status=status.HTTP_200_OK)
+
+class GetListVideo(APIView):
+    def get(self, request):
+        auth_header = request.headers.get("Authorization")
+        if auth_header is None:
+            print("Authorization header is missing")
+        else:
+            print(f"Authorization header received: {auth_header}")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        # Tách và kiểm tra token
+        parts = auth_header.split(" ")
+        if len(parts) != 2:
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        token = parts[1]
+        print("token: ", token)
+
+        # Verify token với Google
+        idInfo = id_token.verify_oauth2_token(
+            token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+        )
+
+        user = User.objects.get(google_id=idInfo["sub"])
+        print("idInfo: ", idInfo)
+        print("idInfo: ", str(user.id))
+        dataUser = {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "profile_picture": user.profile_picture,
+            "last_login_time": user.last_login_time,
+        }
+        media_files = MediaFile.objects.all()
+        media_files_list = []
+        for media_file in media_files:
+            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+            media_file_data["file_path"] = request.build_absolute_uri(
+                media_file.file_path
+            )
+            if media_file.file_watermarked:
+                media_file_data["file_watermarked"] = request.build_absolute_uri(
+                    media_file.file_watermarked
+                )
+            if (
+                media_file.file_type.startswith("video")
+                and media_file.created_by == dataUser["id"]
+            ):
+                media_files_list.append(media_file_data)
+
+        return Response(media_files_list, status=status.HTTP_200_OK)
+
+class GetListPDF(APIView):
+    def get(self, request):
+        auth_header = request.headers.get("Authorization")
+        if auth_header is None:
+            print("Authorization header is missing")
+        else:
+            print(f"Authorization header received: {auth_header}")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        # Tách và kiểm tra token
+        parts = auth_header.split(" ")
+        if len(parts) != 2:
+            return Response(
+                {"detail": "Token not provided or invalid format"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        token = parts[1]
+        print("token: ", token)
+
+        # Verify token với Google
+        idInfo = id_token.verify_oauth2_token(
+            token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+        )
+
+        user = User.objects.get(google_id=idInfo["sub"])
+        print("idInfo: ", idInfo)
+        print("idInfo: ", str(user.id))
+        dataUser = {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "profile_picture": user.profile_picture,
+            "last_login_time": user.last_login_time,
+        }
+        media_files = MediaFile.objects.all()
+        media_files_list = []
+        for media_file in media_files:
+            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+            media_file_data["file_path"] = request.build_absolute_uri(
+                media_file.file_path
+            )
+            if media_file.file_watermarked:
+                media_file_data["file_watermarked"] = request.build_absolute_uri(
+                    media_file.file_watermarked
+                )
+            if (
+                media_file.file_type.startswith("application")
+                and media_file.created_by == dataUser["id"]
+            ):
+                media_files_list.append(media_file_data)
+
+        return Response(media_files_list, status=status.HTTP_200_OK)
+
+
 
 class Create(APIView):
     def post(self, request):
