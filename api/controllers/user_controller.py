@@ -116,10 +116,15 @@ class GetTokenView(APIView):
 
             # Verify token với Google
             idInfo = id_token.verify_oauth2_token(token, requests.Request(), os.getenv('GOOGLE_CLIENT_ID'))
+            expire_time_unix = idInfo.get('exp')
+            if expire_time_unix:
+                # Chuyển đổi từ UNIX timestamp sang định dạng thời gian có thể đọc được
+                expire_time = datetime.datetime.utcfromtimestamp(expire_time_unix).strftime('%Y-%m-%d %H:%M:%S')
 
             return Response({
                 "code": 200,
-                "token": token 
+                "token": token,
+                "expire_time": expire_time
             }, status=status.HTTP_200_OK)
 
         except User.DoesNotExist:
