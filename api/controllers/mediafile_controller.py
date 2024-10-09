@@ -5,17 +5,13 @@ from django.core.files.storage import FileSystemStorage
 import uuid
 import os
 from ..models.mediafile_model import MediaFile, Watermark
-from ..models.font_model import Font
 from ..models.user_model import User
-from ..utils.json_encoder import CustomJSONEncoder
 from ..utils.json_utils import mongo_to_dict
 from django.conf import settings
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
 import moviepy.editor as mp
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
@@ -23,7 +19,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from PyPDF2 import PdfReader, PdfWriter
 import tempfile
-
+from moviepy.editor import VideoFileClip
 class Index(APIView):
     def get(self, request):
 
@@ -358,8 +354,6 @@ class GetListPDF(APIView):
 
         return Response(media_files_list, status=status.HTTP_200_OK)
 
-
-
 class Create(APIView):
     def post(self, request):
 
@@ -399,6 +393,7 @@ class Create(APIView):
             "profile_picture": user.profile_picture,
             "last_login_time": user.last_login_time,
         }
+        
         data = request.data
         file = request.FILES.get("file")
         if file:
@@ -415,10 +410,16 @@ class Create(APIView):
 
             # Extract image dimensions if the file is an image
             if file_type.startswith("image"):
-                from PIL import Image
-
                 image = Image.open(file)
                 width, height = image.size
+
+            # Extract video dimensions if the file is a video
+            elif file_type.startswith("video"):
+                try:
+                    video = VideoFileClip(file.temporary_file_path())
+                    width, height = video.size
+                except Exception as e:
+                    return Response({"error": f"Failed to read video dimensions: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
             media_file = MediaFile(
                 file_name=file_name,
@@ -438,8 +439,6 @@ class Create(APIView):
         return Response(
             {"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST
         )
-
-
 class Edit(APIView):
     def patch(self, request, mediafile_id):
         auth_header = request.headers.get("Authorization")
