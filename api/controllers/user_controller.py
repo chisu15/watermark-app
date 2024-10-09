@@ -160,7 +160,7 @@ class ProfileView(APIView):
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         
 class LogoutView(APIView):
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         try:
             django_logout(request)
             response = Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
