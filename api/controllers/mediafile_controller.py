@@ -433,7 +433,7 @@ class Create(APIView):
                 width=width,
                 height=height,
                 description=data.get("description", ""),
-                # created_by=dataUser["id"],
+                created_by=dataUser["id"],
             )
             media_file.save()
             return Response(
