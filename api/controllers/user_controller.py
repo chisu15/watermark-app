@@ -164,7 +164,7 @@ class LogoutView(APIView):
         try:
             django_logout(request)
             response = Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
-            response.delete_cookie('token')  # Xóa cookie chứa token
+            response.delete_cookie('token', httponly=True, secure=True, samesite='None')
         except Exception as error:
             response = Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         
