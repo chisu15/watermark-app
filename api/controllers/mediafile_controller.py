@@ -401,6 +401,7 @@ class Create(APIView):
         file = request.FILES.get("file")
         if file:
             fs = FileSystemStorage()
+            title = os.path.splitext(file.name)[0]
             extension = os.path.splitext(file.name)[1]
             filename = str(uuid.uuid4()) + extension
             saved_filename = fs.save(filename, file)
@@ -426,6 +427,7 @@ class Create(APIView):
                     return Response({"error": f"Failed to read video dimensions: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
             media_file = MediaFile(
+                title = title,
                 file_name=file_name,
                 file_type=file_type,
                 file_size=file_size,
