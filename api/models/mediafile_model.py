@@ -12,6 +12,7 @@ class Watermark(me.EmbeddedDocument):
     font_id = me.StringField(required=True)
 
 class MediaFile(me.Document):
+    title = me.StringField()
     file_name = me.StringField(max_length=255, required=True)
     file_type = me.StringField(max_length=50, required=True)
     file_size = me.IntField(required=True)
