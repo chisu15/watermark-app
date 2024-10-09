@@ -20,6 +20,7 @@ from reportlab.pdfbase import pdfmetrics
 from PyPDF2 import PdfReader, PdfWriter
 import tempfile
 from moviepy.editor import VideoFileClip
+
 class Index(APIView):
     def get(self, request):
 
@@ -354,6 +355,8 @@ class GetListPDF(APIView):
 
         return Response(media_files_list, status=status.HTTP_200_OK)
 
+
+
 class Create(APIView):
     def post(self, request):
 
@@ -408,7 +411,6 @@ class Create(APIView):
             file_name = file.name
             width, height = None, None
 
-            # Extract image dimensions if the file is an image
             if file_type.startswith("image"):
                 image = Image.open(file)
                 width, height = image.size
@@ -416,7 +418,9 @@ class Create(APIView):
             # Extract video dimensions if the file is a video
             elif file_type.startswith("video"):
                 try:
-                    video = VideoFileClip(file.temporary_file_path())
+                    # Sử dụng file đã lưu trong FileSystemStorage để lấy thông tin kích thước
+                    saved_file_path = fs.path(saved_filename)
+                    video = VideoFileClip(saved_file_path)
                     width, height = video.size
                 except Exception as e:
                     return Response({"error": f"Failed to read video dimensions: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
@@ -429,7 +433,7 @@ class Create(APIView):
                 width=width,
                 height=height,
                 description=data.get("description", ""),
-                created_by=dataUser["id"],
+                # created_by=dataUser["id"],
             )
             media_file.save()
             return Response(
@@ -439,6 +443,8 @@ class Create(APIView):
         return Response(
             {"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
 class Edit(APIView):
     def patch(self, request, mediafile_id):
         auth_header = request.headers.get("Authorization")
