@@ -777,8 +777,7 @@ class ApplyWatermark(APIView):
 
                 # Lấy URL của file đã lưu
                 watermarked_url = fs.url(filename)
-
-                # Cập nhật thông tin file đã watermark trong database
+                media_file.watermark_options = watermark_options
                 media_file.file_watermarked = watermarked_url
                 media_file.save()
 
