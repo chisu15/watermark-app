@@ -416,10 +416,8 @@ class Create(APIView):
                 image = Image.open(file)
                 width, height = image.size
 
-            # Extract video dimensions if the file is a video
             elif file_type.startswith("video"):
                 try:
-                    # Sử dụng file đã lưu trong FileSystemStorage để lấy thông tin kích thước
                     saved_file_path = fs.path(saved_filename)
                     video = VideoFileClip(saved_file_path)
                     width, height = video.size
@@ -667,23 +665,19 @@ class ApplyWatermark(APIView):
                 can.drawString(watermark_options.position_x, watermark_options.position_y, watermark_options.content)
                 can.save()
 
-                # Di chuyển vị trí đầu tiên của packet để đọc lại
                 packet.seek(0)
                 watermark_pdf = PdfReader(packet)
 
-                # Đọc PDF gốc và chuẩn bị để thêm watermark
                 original_pdf = PdfReader(open(absolute_file_path, "rb"))
                 output_pdf = PdfWriter()
 
                 watermark_page = watermark_pdf.pages[0]
 
-                # Thêm watermark vào từng trang
                 for page_number in range(len(original_pdf.pages)):
                     original_page = original_pdf.pages[page_number]
-                    original_page.merge_page(watermark_page)  # Thêm watermark vào mỗi trang
+                    original_page.merge_page(watermark_page)
                     output_pdf.add_page(original_page)
 
-                # Sử dụng BytesIO để lưu PDF
                 pdf_io = BytesIO()
                 output_pdf.write(pdf_io)
                 pdf_io.seek(0)  # Đặt lại con trỏ về đầu stream
