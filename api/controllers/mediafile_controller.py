@@ -612,7 +612,7 @@ class ApplyWatermark(APIView):
             )
 
         fontUsed = ImageFont.truetype(absolute_font_path, int(watermark_options.size))
-
+        print("123123213", file_extension)
         if file_extension in [".jpg", ".jpeg", ".png"]:
             # Xử lý watermark cho hình ảnh
             try:
@@ -709,7 +709,7 @@ class ApplyWatermark(APIView):
                 video = mp.VideoFileClip(absolute_file_path)
 
                 watermark = None
-
+                print("11111111111111111")
                 if data["type"] == "text":
                     # Chuyển đổi hex màu sang RGB
                     hex_color = data["color"]
