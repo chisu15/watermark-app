@@ -660,7 +660,7 @@ class ApplyWatermark(APIView):
                 # Tạo watermark với font custom
                 packet = BytesIO()
                 can = canvas.Canvas(packet, pagesize=letter)
-                can.setFont('CustomFont', watermark_options.size)  # Sử dụng font từ absolute_font_path
+                can.setFont('CustomFont', watermark_options.size)
                 can.setFillColorRGB(rgb_color[0]/255, rgb_color[1]/255, rgb_color[2]/255, watermark_options.opacity)
                 can.drawString(watermark_options.position_x, watermark_options.position_y, watermark_options.content)
                 can.save()
@@ -773,8 +773,11 @@ class ApplyWatermark(APIView):
                 saved_filepath = fs.path(filename)
 
                 # Ghi file video watermarked
-                watermarked_video.write_videofile(saved_filepath, codec="libx264")
-
+                # Ghi file video watermarked với alpha channel cho MOV
+                if file_extension == ".mov":
+                    watermarked_video.write_videofile(saved_filepath, codec="png", fps=24, withmask=True)
+                else:
+                    watermarked_video.write_videofile(saved_filepath, codec="libx264")
                 # Lấy URL của file đã lưu
                 watermarked_url = fs.url(filename)
                 media_file.watermark_options = watermark_options
