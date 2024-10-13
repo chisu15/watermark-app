@@ -852,27 +852,29 @@ class ApplyWatermark(APIView):
             status=status.HTTP_200_OK,
         )
 
-def text_to_image(text, font_path, font_size, text_color, padding_bottom=50):
+def text_to_image(text, font_path, font_size, text_color):
     # Tạo font từ font path
     font = ImageFont.truetype(font_path, font_size)
     
-    # Tính kích thước của văn bản
+    # Tạo một hình ảnh tạm thời để tính kích thước của văn bản
     temp_img = Image.new('RGBA', (1, 1), (255, 255, 255, 0))
     draw = ImageDraw.Draw(temp_img)
-    bbox = draw.textbbox((0, 0), text, font=font)  # Lấy kích thước khung của văn bản
     
+    # Tính toán kích thước vùng bao quanh văn bản bằng textbbox()
+    bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
     
-    # Tạo ảnh có chiều cao thêm padding ở phía dưới
-    image_size = (text_width, text_height + padding_bottom)
+    # Thêm khoảng trống dư ra để đảm bảo văn bản không bị cắt
+    ascent, descent = font.getmetrics()
+    total_height = text_height + descent  # Thêm descent để tránh cắt phần dưới của văn bản
     
-    # Tạo ảnh chứa văn bản
-    img = Image.new('RGBA', image_size, (255, 255, 255, 0))  # Transparent background
+    # Tạo hình ảnh với kích thước vừa đủ để chứa văn bản
+    img = Image.new('RGBA', (text_width, total_height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
     
-    # Vẽ văn bản lên ảnh (đặt ở vị trí (0, 0) và thêm phần padding ở phía dưới)
-    draw.text((0, 0), text, fill=text_color, font=font)
+    # Vẽ văn bản lên hình ảnh
+    draw.text((0, 0), text, font=font, fill=text_color)
     
     # Lưu ảnh tạm thời và trả về đường dẫn file ảnh
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
