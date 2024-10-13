@@ -705,29 +705,16 @@ class ApplyWatermark(APIView):
 
         elif file_extension in [".mp4", ".mov", ".avi"]:
             try:
-                # Load video
+                # Load video bằng moviepy
                 video = mp.VideoFileClip(absolute_file_path)
 
                 watermark = None
-                print("11111111111111111")
                 if data["type"] == "text":
                     # Chuyển đổi hex màu sang RGB
                     hex_color = data["color"]
                     rgb_color = hex_to_rgb(hex_color)
 
-                    # Lấy font từ database
-                    font = MediaFile.objects(id=data["font"]).first()
-                    if not font:
-                        return Response(
-                            {"error": "Font not found"}, status=status.HTTP_404_NOT_FOUND
-                        )
-
-                    font_path = font.file_path
-                    font_path = font_path[len("/media"):]
-                    font_path = font_path.lstrip("/")
-                    absolute_font_path = os.path.normpath(os.path.join(settings.MEDIA_ROOT, font_path))
-
-                    # Chuyển văn bản thành hình ảnh sử dụng Pillow
+                    # Tạo hình ảnh chứa văn bản watermark sử dụng Pillow
                     text_image_path = text_to_image(
                         data["content"],
                         absolute_font_path,
@@ -735,7 +722,7 @@ class ApplyWatermark(APIView):
                         (rgb_color[0], rgb_color[1], rgb_color[2], int(float(data["opacity"]) * 255)),
                     )
 
-                    # Load the text image as a watermark
+                    # Load hình ảnh chứa văn bản watermark
                     watermark = mp.ImageClip(text_image_path).set_duration(video.duration)
 
                 elif data["type"] == "image":
@@ -751,7 +738,7 @@ class ApplyWatermark(APIView):
                     watermark_image_filename = fs.save(f"{uuid.uuid4()}_watermark.png", watermark_image_file)
                     watermark_image_path = fs.path(watermark_image_filename)
 
-                    # Load the PNG image for the watermark
+                    # Load the PNG image as a watermark
                     watermark = mp.ImageClip(watermark_image_path).set_duration(video.duration)
 
                 if watermark is None:
@@ -773,11 +760,11 @@ class ApplyWatermark(APIView):
                 saved_filepath = fs.path(filename)
 
                 # Ghi file video watermarked
-                # Ghi file video watermarked với alpha channel cho MOV
-                if file_extension == ".mov":
-                    watermarked_video.write_videofile(saved_filepath, codec="png", fps=24, withmask=True)
-                else:
-                    watermarked_video.write_videofile(saved_filepath, codec="libx264")
+                # Sử dụng codec libx264 để tăng tốc độ và sử dụng multithreading
+                watermarked_video.write_videofile(
+                    saved_filepath, codec="libx264", threads=4, bitrate="2000k"
+                )
+
                 # Lấy URL của file đã lưu
                 watermarked_url = fs.url(filename)
                 media_file.watermark_options = watermark_options
@@ -812,26 +799,14 @@ class ApplyWatermark(APIView):
         )
 
 def text_to_image(text, font_path, font_size, text_color, image_size=(500, 100)):
-    # Tạo một hình ảnh mới với nền trong suốt
     img = Image.new('RGBA', image_size, (255, 255, 255, 0))  
     draw = ImageDraw.Draw(img)
-
-    # Load font
     font = ImageFont.truetype(font_path, font_size)
-
-    # Lấy bounding box của văn bản
     bbox = draw.textbbox((0, 0), text, font=font)
-
-    text_width = bbox[2] - bbox[0]  # Chiều rộng của văn bản
-    text_height = bbox[3] - bbox[1]  # Chiều cao của văn bản
-
-    # Tính toán vị trí để căn giữa văn bản
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1] 
     position = ((image_size[0] - text_width) // 2, (image_size[1] - text_height) // 2)
-
-    # Vẽ văn bản lên hình ảnh
     draw.text(position, text, fill=text_color, font=font)
-
-    # Tạo tệp tạm thời để lưu hình ảnh watermark
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
         img.save(tmp_file.name, "PNG")
         temp_image_path = tmp_file.name
