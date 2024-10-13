@@ -748,7 +748,8 @@ class ApplyWatermark(APIView):
 
                 # Đặt vị trí watermark
                 watermark = watermark.set_position(
-                    (float(data["position_x"]), float(data["position_y"]))
+                    (watermark_options.position_x / video.w, watermark_options.position_y / video.h), 
+                    relative=True
                 ).set_opacity(float(data["opacity"]))
 
                 # Composite video with watermark
