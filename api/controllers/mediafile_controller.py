@@ -853,30 +853,17 @@ class ApplyWatermark(APIView):
         )
 
 def text_to_image(text, font_path, font_size, text_color):
-    # Tạo font từ font path
     font = ImageFont.truetype(font_path, font_size)
-    
-    # Tạo một hình ảnh tạm thời để tính kích thước của văn bản
     temp_img = Image.new('RGBA', (1, 1), (255, 255, 255, 0))
     draw = ImageDraw.Draw(temp_img)
-    
-    # Tính toán kích thước vùng bao quanh văn bản bằng textbbox()
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
-    
-    # Thêm khoảng trống dư ra để đảm bảo văn bản không bị cắt
     ascent, descent = font.getmetrics()
-    total_height = text_height + descent  # Thêm descent để tránh cắt phần dưới của văn bản
-    
-    # Tạo hình ảnh với kích thước vừa đủ để chứa văn bản
+    total_height = text_height + font_size
     img = Image.new('RGBA', (text_width, total_height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
-    
-    # Vẽ văn bản lên hình ảnh
     draw.text((0, 0), text, font=font, fill=text_color)
-    
-    # Lưu ảnh tạm thời và trả về đường dẫn file ảnh
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
         img.save(tmp_file.name, "PNG")
         temp_image_path = tmp_file.name
