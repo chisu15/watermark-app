@@ -21,7 +21,7 @@ urlpatterns = [
     path('', views.api_overview, name='api-overview'),
     # MEDIAFILES
     path("mediafiles/", Index.as_view(), name="mediafile-index"),
-    path("mediafiles/sticker/", Index.as_view(), name="mediafile-index-sticker"),
+    path("mediafiles/sticker/", IndexSticker.as_view(), name="mediafile-index-sticker"),
     path("mediafiles/create", Create.as_view(), name="mediafile-create"),
 
     path("mediafiles/detail/<str:mediafile_id>", Detail.as_view(), name="mediafile-detail"),
