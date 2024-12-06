@@ -3,6 +3,7 @@ from . import views
 from .controllers.mediafile_controller import (
     Index,
     IndexSticker,
+    IndexBackground,
     Delete,
     Detail,
     Edit,
@@ -22,6 +23,7 @@ urlpatterns = [
     # MEDIAFILES
     path("mediafiles/", Index.as_view(), name="mediafile-index"),
     path("mediafiles/sticker/", IndexSticker.as_view(), name="mediafile-index-sticker"),
+    path("mediafiles/background/", IndexBackground.as_view(), name="mediafile-index-background"),
     path("mediafiles/create", Create.as_view(), name="mediafile-create"),
 
     path("mediafiles/detail/<str:mediafile_id>", Detail.as_view(), name="mediafile-detail"),

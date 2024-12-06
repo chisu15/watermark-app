@@ -89,6 +89,18 @@ class IndexSticker(APIView):
 
         return Response(media_files_list, status=status.HTTP_200_OK)
 
+class IndexBackground(APIView):
+    def get(self, request):
+        media_files = MediaFile.objects.filter(type="background")  # Lọc theo type
+        media_files_list = []
+        for media_file in media_files:
+            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+            media_file_data["file_path"] = request.build_absolute_uri(
+                media_file.file_path
+            )
+            media_files_list.append(media_file_data)  # Thêm dữ liệu vào danh sách
+
+        return Response(media_files_list, status=status.HTTP_200_OK)
 
 
 class Detail(APIView):
