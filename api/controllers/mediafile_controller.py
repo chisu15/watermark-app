@@ -76,6 +76,20 @@ class Index(APIView):
 
         return Response(media_files_list, status=status.HTTP_200_OK)
 
+class IndexSticker(APIView):
+    def get(self, request):
+        media_files = MediaFile.objects.filter(type="sticker")  # Lọc theo type
+        media_files_list = []
+        for media_file in media_files:
+            media_file_data = mongo_to_dict(media_file.to_mongo().to_dict())
+            media_file_data["file_path"] = request.build_absolute_uri(
+                media_file.file_path
+            )
+            media_files_list.append(media_file_data)  # Thêm dữ liệu vào danh sách
+
+        return Response(media_files_list, status=status.HTTP_200_OK)
+
+
 
 class Detail(APIView):
     def get(self, request, mediafile_id):
@@ -434,6 +448,7 @@ class Create(APIView):
                 height=height,
                 description=data.get("description", ""),
                 created_by=dataUser["id"],
+                type = data.get("type", "")
             )
             media_file.save()
             return Response(
@@ -624,14 +639,9 @@ class ApplyWatermark(APIView):
         fontUsed = ImageFont.truetype(absolute_font_path, int(watermark_options.size))
         print("123123213", file_extension)
         if file_extension in [".jpg", ".jpeg", ".png"]:
-            # Xử lý watermark cho hình ảnh
             try:
-                # Mở ảnh gốc
                 image = Image.open(absolute_file_path).convert("RGBA")
-                
-                # Kiểm tra loại watermark: text hoặc image
                 if data["type"] == "text":
-                    # Lấy font từ database
                     font = MediaFile.objects(id=watermark_options.font_id).first()
                     if not font:
                         return Response(
@@ -652,7 +662,6 @@ class ApplyWatermark(APIView):
 
                     fontUsed = ImageFont.truetype(absolute_font_path, int(watermark_options.size))
 
-                    # Tạo watermark dạng text
                     txt = Image.new("RGBA", image.size, (255, 255, 255, 0))
                     draw = ImageDraw.Draw(txt)
 
@@ -663,7 +672,6 @@ class ApplyWatermark(APIView):
                         fill=(rgb_color[0], rgb_color[1], rgb_color[2], int(watermark_options.opacity * 255))
                     )
 
-                    # Kết hợp watermark text với ảnh gốc
                     watermarked = Image.alpha_composite(image, txt)
 
                 elif data["type"] == "image":
@@ -674,27 +682,19 @@ class ApplyWatermark(APIView):
                             {"error": "No watermark image provided"}, status=status.HTTP_400_BAD_REQUEST
                         )
 
-                    # Lưu file watermark tạm thời
                     fs = FileSystemStorage()
                     watermark_image_filename = fs.save(f"{uuid.uuid4()}_watermark.png", watermark_image_file)
                     watermark_image_path = fs.path(watermark_image_filename)
-
-                    # Mở file watermark
                     watermark = Image.open(watermark_image_path).convert("RGBA")
 
-                    # Resize watermark cho phù hợp với ảnh gốc
                     watermark = watermark.resize((image.size[0] // 5, image.size[1] // 5))
-
-                    # Áp dụng độ trong suốt cho watermark
                     alpha = watermark.split()[3]
                     alpha = alpha.point(lambda p: p * watermark_options.opacity)
                     watermark.putalpha(alpha)
 
-                    # Chèn watermark vào ảnh gốc
                     watermarked = Image.alpha_composite(image, Image.new("RGBA", image.size, (255, 255, 255, 0)))
                     watermarked.paste(watermark, (int(watermark_options.position_x), int(watermark_options.position_y)), watermark)
 
-                    # Xóa file watermark tạm sau khi sử dụng
                     os.remove(watermark_image_path)
 
                 else:

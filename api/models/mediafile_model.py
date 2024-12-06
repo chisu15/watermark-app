@@ -19,6 +19,7 @@ class MediaFile(me.Document):
     file_path = me.StringField(required=True)
     width = me.IntField(required=False)
     height = me.IntField(required=False)
+    type = me.StringField(max_length=255)
     description = me.StringField()
     watermark_options = me.EmbeddedDocumentField(Watermark, required=False)
     file_watermarked = me.StringField()
